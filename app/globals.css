@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --transition-duration: 0.3s;
+}
+
+.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --sidebar-bg: #1e40af;
+  --sidebar-hover: #1e3a8a;
+  --sidebar-text: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-text: #0f172a;
+  --button-bg: #2563eb;
+  --button-text: #ffffff;
+  --button-hover: #1d4ed8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --muted: #64748b;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-text: #f8fafc;
+  --input-bg: #1e293b;
+  --input-border: #334155;
+  --input-text: #f8fafc;
+  --button-bg: #3b82f6;
+  --button-text: #ffffff;
+  --button-hover: #2563eb;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --muted: #94a3b8;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color var(--transition-duration), color var(--transition-duration);
+  cursor: default;
+}
+
+/* Permitir cursor de texto apenas em elementos de entrada que realmente precisam */
+input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="tel"], input[type="url"], input[type="number"], input[type="date"], textarea, [contenteditable="true"] {
+  cursor: text;
+}
+
+/* Remover cursor de texto de outros tipos de input que não precisam */
+input[type="checkbox"], input[type="radio"], input[type="file"], input[type="color"], input[type="range"], select {
+  cursor: pointer;
+}
+
+/* Garantir que botões e links tenham cursor de ponteiro */
+button, a, [role="button"], .pointer {
+  cursor: pointer;
+}
+
+/* Manter cursor not-allowed para elementos desabilitados */
+[disabled], .cursor-not-allowed {
+  cursor: not-allowed;
+}
