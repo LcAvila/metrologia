@@ -35,11 +35,13 @@ const Layout = memo(function Layout({ children, title }: LayoutProps) {
   }, []);
   
   return (
-    <div className={`flex min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[var(--background)]' : 'bg-[var(--background)]'}`}>
+    <div className={`flex min-h-screen transition-colors duration-300 relative ${theme === 'dark' ? 'bg-slate-950' : 'bg-[var(--background)]'}`}>
+      <div className="background-grid"></div>
+      <div className="background-blur"></div>
       <Sidebar title={title} />
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-16'}`}>
+      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-16'} relative z-10`}>
         {/* Content */}
         <main className="p-6">
           <h1 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-[var(--foreground)]' : 'text-[var(--foreground)]'}`}>{title}</h1>

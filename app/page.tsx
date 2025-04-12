@@ -209,7 +209,7 @@ export default function Home() {
           <div className="bg-[var(--card-bg)] rounded-lg shadow overflow-hidden transition-colors duration-300">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-750">
+                <thead className="bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-50">ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-50">Tipo</th>

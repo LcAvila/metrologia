@@ -93,8 +93,8 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
 
       {/* Sidebar com animações melhoradas e persistência */}
       <div 
-        className={`sidebar fixed inset-y-0 left-0 transform transition-all duration-300 ease-in-out z-50 shadow-lg will-change-transform
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)]
+        className={`sidebar fixed inset-y-0 left-0 transform transition-all duration-300 ease-in-out z-50 will-change-transform
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${theme === 'dark' ? 'bg-black/20 backdrop-blur-md border-r border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'bg-gray-900 border-r border-gray-200/50 shadow-lg'} text-white
           ${isExpanded ? 'w-64' : 'w-16'} flex flex-col`}
         style={{
           backfaceVisibility: 'hidden', // Melhora a performance da animação
@@ -107,14 +107,16 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
       >
         <div className="flex items-center justify-between p-4 border-b border-opacity-20 border-[var(--sidebar-text)]">
           <div className="flex flex-col items-center w-full py-2">
-            <div className={`relative transition-all duration-300 ease-in-out ${isExpanded ? 'w-48' : 'w-12'}`}>
-              <img 
-                src="/assets/logo.png" 
-                alt="Logo Metrologia" 
-                className={`w-full h-auto transform transition-all duration-300 ease-in-out hover:scale-105`}
-              />
+            <div className="flex items-center justify-center">
+              <div className={`relative transition-all duration-300 ease-in-out ${isExpanded ? 'w-32' : 'w-12'}`}>
+                <img 
+                  src="/assets/logo.png" 
+                  alt="Logo Metrologia Compactor" 
+                  className={`w-full h-auto transform transition-all duration-300 ease-in-out hover:scale-105`}
+                />
+              </div>
+              <span className={`text-lg font-semibold transition-all duration-300 ml-1 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Metrologia Compactor</span>
             </div>
-            <span className={`text-xl font-semibold transition-all duration-300 text-center ${isExpanded ? 'opacity-100 mt-3' : 'opacity-0 h-0 overflow-hidden'}`}>Metrologia</span>
           </div>
           <div className="flex items-center">
             <button 
@@ -223,20 +225,20 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
       </div>
 
       {/* Mobile Header com animações */}
-      <header className="md:hidden bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] p-4 flex items-center justify-between shadow-md">
+      <header className={`md:hidden ${theme === 'dark' ? 'bg-black/20 backdrop-blur-md border-b border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'bg-white/70 backdrop-blur-md border-b border-gray-200/50'} text-[var(--sidebar-text)] p-4 flex items-center justify-between shadow-md`}>
         <button 
           onClick={openSidebar}
           className="transform transition-transform duration-200 hover:scale-110 focus:outline-none"
         >
           <i className="bx bx-menu text-2xl"></i>
         </button>
-        <div className="flex flex-col items-center">
+        <div className="flex items-center">
           <img 
             src="/assets/logo.png" 
-            alt="Logo Metrologia" 
-            className="h-16 mb-1" 
+            alt="Logo Metrologia Compactor" 
+            className="h-8 mr-1" 
           />
-          <h1 className="text-xl font-semibold transform transition-transform duration-200">Metrologia</h1>
+          <h1 className="text-xl font-semibold transform transition-transform duration-200">Metrologia Compactor</h1>
         </div>
         <div className="w-8"></div> {/* Spacer for alignment */}
       </header>

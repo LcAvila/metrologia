@@ -7,25 +7,31 @@
 }
 
 .light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --foreground: #333;
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
   --sidebar-bg: #1e40af;
   --sidebar-hover: #1e3a8a;
-  --sidebar-text: #ffffff;
+  --sidebar-text: #333;
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
-  --input-text: #0f172a;
+  --input-text: #333;
   --button-bg: #2563eb;
-  --button-text: #ffffff;
+  --button-text: #333;
   --button-hover: #1d4ed8;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
   --muted: #64748b;
+  --grid-bg: linear-gradient(to right, #8080800a 1px, transparent 1px),
+            linear-gradient(to bottom, #8080800a 1px, transparent 1px);
+  --grid-size: 14px 24px;
+  --blur-color: rgba(244, 114, 182, 0.2); /* fuchsia-400 com 20% de opacidade */
+  --gradient-start: #ffffff;
+  --gradient-mid: #ffffff;
+  --gradient-end: #ffffff;
 }
 
 .dark {
@@ -48,6 +54,13 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --muted: #94a3b8;
+  --grid-bg: linear-gradient(to right, #4f4f4f2e 1px, transparent 1px),
+            linear-gradient(to bottom, #4f4f4f2e 1px, transparent 1px);
+  --grid-size: 14px 24px;
+  --blur-color: rgba(244, 114, 182, 0.2); /* fuchsia-400 com 20% de opacidade */
+  --gradient-start: #0f172a;
+  --gradient-mid: #1e1b4b;
+  --gradient-end: #312e81;
 }
 
 html {
@@ -55,15 +68,58 @@ html {
 }
 
 body {
-  background-color: var(--background);
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  transition: background-color var(--transition-duration), color var(--transition-duration);
+  transition: background var(--transition-duration), color var(--transition-duration);
   cursor: default;
-  will-change: background-color, color;
+  will-change: background, color;
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  position: relative;
+  background-attachment: fixed;
+}
+
+.background-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  height: 100%;
+  width: 100%;
+  background-image: var(--grid-bg);
+  background-size: var(--grid-size);
+}
+
+.background-blur {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: -10;
+  margin: auto;
+  height: 310px;
+  width: 310px;
+  border-radius: 9999px;
+  background-color: var(--blur-color);
+  opacity: 0.4;
+  filter: blur(100px);
+  animation: pulse 10s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
 }
 
 /* Permitir cursor de texto apenas em elementos de entrada que realmente precisam */
