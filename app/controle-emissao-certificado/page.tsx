@@ -199,7 +199,7 @@ export default function ControleEmissaoCertificado() {
             <div className="pt-3">
               <button 
                 type="submit" 
-                className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] py-1.5 px-3 text-sm rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
+                className="w-full bg-[var(--primary)] text-white py-1.5 px-3 text-sm rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
               >
                 Salvar Certificado
               </button>

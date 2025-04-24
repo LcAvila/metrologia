@@ -160,19 +160,19 @@ export default function CadastroEquipamento() {
 
   return (
     <Layout title="Cadastro de Equipamento">
-      <div className="bg-[var(--card-bg)] p-6 rounded-lg shadow transition-colors duration-300">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-[var(--card-bg)] p-2 sm:p-3 md:p-5 rounded-lg shadow transition-colors duration-300">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 md:space-y-5">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-[var(--foreground)] border-b border-[var(--border)] pb-2 mb-4">Informações Básicas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="type" className="block text-sm font-medium text-[var(--foreground)] mb-1">Tipo*</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+              <div className="col-span-1 sm:col-span-2 md:col-span-1">
+                <label htmlFor="type" className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1">Tipo*</label>
                 <select 
                   id="type" 
                   name="type" 
                   value={equipment.type}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                  className="w-full p-2 sm:p-2.5 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                   required
                 >
                     <option value="">Selecione um tipo de equipamento</option>
@@ -239,7 +239,7 @@ export default function CadastroEquipamento() {
                     </optgroup>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="id" className="block text-sm font-medium text-[var(--foreground)] mb-1">ID*</label>
                   <input 
                     type="text" 
@@ -247,18 +247,18 @@ export default function CadastroEquipamento() {
                     name="id" 
                     value={equipment.id}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                     required
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="sector" className="block text-sm font-medium text-[var(--foreground)] mb-1">Setor*</label>
                   <select 
                     id="sector" 
                     name="sector" 
                     value={equipment.sector}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                     required
                   >
                     <option value="">Selecione um setor</option>
@@ -273,14 +273,14 @@ export default function CadastroEquipamento() {
                     <option value="Manutencao">Manutenção</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="status" className="block text-sm font-medium text-[var(--foreground)] mb-1">Status*</label>
                   <select 
                     id="status" 
                     name="status" 
                     value={equipment.status}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                     required
                   >
                     <option value="">Selecione um status</option>
@@ -290,7 +290,7 @@ export default function CadastroEquipamento() {
                     <option value="discarded">Descartado</option>
                   </select>
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="lastCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Última Calibração*</label>
                   <input 
                     type="date" 
@@ -298,11 +298,11 @@ export default function CadastroEquipamento() {
                     name="lastCalibration" 
                     value={equipment.lastCalibration}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                     required
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="nextCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Próxima Calibração*</label>
                   <input 
                     type="date" 
@@ -310,11 +310,11 @@ export default function CadastroEquipamento() {
                     name="nextCalibration" 
                     value={equipment.nextCalibration}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                     required
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="model" className="block text-sm font-medium text-[var(--foreground)] mb-1">Modelo do Equipamento</label>
                   <input 
                     type="text" 
@@ -322,10 +322,10 @@ export default function CadastroEquipamento() {
                     name="model" 
                     value={equipment.model}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="serialNumber" className="block text-sm font-medium text-[var(--foreground)] mb-1">Número de Série</label>
                   <input 
                     type="text" 
@@ -333,10 +333,10 @@ export default function CadastroEquipamento() {
                     name="serialNumber" 
                     value={equipment.serialNumber}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="manufacturer" className="block text-sm font-medium text-[var(--foreground)] mb-1">Fabricante</label>
                   <input 
                     type="text" 
@@ -344,10 +344,10 @@ export default function CadastroEquipamento() {
                     name="manufacturer" 
                     value={equipment.manufacturer}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="measurementRange" className="block text-sm font-medium text-[var(--foreground)] mb-1">Faixa de Medida</label>
                   <input 
                     type="text" 
@@ -355,13 +355,13 @@ export default function CadastroEquipamento() {
                     name="measurementRange" 
                     value={equipment.measurementRange}
                     onChange={handleChange}
-                    className="w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
                     placeholder="Ex: 0-150mm, 0-10kg"
                   />
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="certificateFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificado</label>
-                  <div className="flex items-center w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-300">
+                  <div className="flex items-center w-full p-1.5 sm:p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-300">
                     <i className="bx bx-file text-xl mr-2"></i>
                     <input 
                       type="file" 
@@ -373,9 +373,9 @@ export default function CadastroEquipamento() {
                     />
                   </div>
                 </div>
-                <div>
+                <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="dataRecordFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Registro de Dados</label>
-                  <div className="flex items-center w-full p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-300">
+                  <div className="flex items-center w-full p-1.5 sm:p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-300">
                     <i className="bx bx-upload text-xl mr-2"></i>
                     <input 
                       type="file" 
@@ -389,16 +389,16 @@ export default function CadastroEquipamento() {
                 </div>
               </div>
             </div>
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
                 <Link 
                   href="/" 
-                  className="px-4 py-2 bg-[var(--muted)] text-[var(--foreground)] rounded hover:opacity-90 transition-colors duration-300"
+                  className="px-4 py-2 bg-[var(--muted)] text-white rounded hover:opacity-90 transition-colors duration-300 text-center"
                 >
                   Cancelar
                 </Link>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 bg-[var(--button-bg)] text-[var(--button-text)] rounded hover:bg-[var(--button-hover)] transition-colors duration-300"
+                  className="px-4 py-2 bg-[var(--button-bg)] text-[var(--button-text)] rounded hover:bg-[var(--button-hover)] transition-colors duration-300 text-center w-full sm:w-auto"
                 >
                   Salvar
                 </button>

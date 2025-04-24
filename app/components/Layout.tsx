@@ -41,10 +41,10 @@ const Layout = memo(function Layout({ children, title }: LayoutProps) {
       <Sidebar title={title} />
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-16'} relative z-10`}>
+      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-16'} pt-14 sm:pt-16 md:pt-0 relative z-10 max-w-full`}>
         {/* Content */}
-        <main className="p-6">
-          <h1 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-[var(--foreground)]' : 'text-[var(--foreground)]'}`}>{title}</h1>
+        <main className="p-2 sm:p-3 md:p-5 overflow-x-hidden">
+          <h1 className={`text-base sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 md:mb-5 ${theme === 'dark' ? 'text-[var(--foreground)]' : 'text-[var(--foreground)]'}`}>{title}</h1>
           {children}
         </main>
       </div>

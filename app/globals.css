@@ -7,31 +7,31 @@
 }
 
 .light {
-  --foreground: #333;
-  --card-bg: #ffffff;
-  --card-border: #e2e8f0;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --sidebar-bg: #1e40af;
-  --sidebar-hover: #1e3a8a;
-  --sidebar-text: #333;
-  --input-bg: #ffffff;
-  --input-border: #cbd5e1;
-  --input-text: #333;
-  --button-bg: #2563eb;
-  --button-text: #333;
-  --button-hover: #1d4ed8;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --muted: #64748b;
-  --grid-bg: linear-gradient(to right, #8080800a 1px, transparent 1px),
-            linear-gradient(to bottom, #8080800a 1px, transparent 1px);
+  --foreground: #464646;
+  --card-bg: #f8f8f8;
+  --card-border: #6f6f6f;
+  --primary: #464646;
+  --primary-hover: #626464;
+  --sidebar-bg: #464646;
+  --sidebar-hover: #626464;
+  --sidebar-text: #f8f8f8;
+  --input-bg: #f8f8f8;
+  --input-border: #6f6f6f;
+  --input-text: #464646;
+  --button-bg: #464646;
+  --button-text: #f8f8f8;
+  --button-hover: #626464;
+  --success: #464646;
+  --warning: #6f6f6f;
+  --danger: #626464;
+  --muted: #6f6f6f;
+  --grid-bg: linear-gradient(to right, #6f6f6f0a 1px, transparent 1px),
+            linear-gradient(to bottom, #6f6f6f0a 1px, transparent 1px);
   --grid-size: 14px 24px;
-  --blur-color: rgba(244, 114, 182, 0.2); /* fuchsia-400 com 20% de opacidade */
-  --gradient-start: #ffffff;
-  --gradient-mid: #ffffff;
-  --gradient-end: #ffffff;
+  --blur-color: rgba(111, 111, 111, 0.2); /* Usando #6f6f6f com 20% de opacidade */
+  --gradient-start: #f8f8f8;
+  --gradient-mid: #f8f8f8;
+  --gradient-end: #f8f8f8;
 }
 
 .dark {
@@ -140,4 +140,54 @@ button, a, [role="button"], .pointer {
 /* Manter cursor not-allowed para elementos desabilitados */
 [disabled], .cursor-not-allowed {
   cursor: not-allowed;
+}
+
+/* Media queries para responsividade */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .background-blur {
+    height: 200px;
+    width: 200px;
+  }
+  
+  /* Ajustes para formulários em telas pequenas */
+  input, select, textarea {
+    font-size: 16px !important; /* Evita zoom automático em iOS */
+    padding: 0.5rem !important;
+  }
+  
+  /* Reduzir espaçamento em telas pequenas */
+  .p-3, .p-4, .p-6 {
+    padding: 0.75rem !important;
+  }
+  
+  .space-y-4, .space-y-6 {
+    margin-top: 0.5rem !important;
+  }
+}
+
+/* Tablets */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Ajustes específicos para tablets */
+  .background-blur {
+    height: 250px;
+    width: 250px;
+  }
+  
+  /* Melhorar espaçamento em tablets */
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Ajustes para telas de toque */
+@media (hover: none) {
+  /* Aumentar área de toque para elementos interativos */
+  button, a, [role="button"], .pointer {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

@@ -94,8 +94,8 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
       {/* Sidebar com animações melhoradas e persistência */}
       <div 
         className={`sidebar fixed inset-y-0 left-0 transform transition-all duration-300 ease-in-out z-50 will-change-transform
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${theme === 'dark' ? 'bg-black/20 backdrop-blur-md border-r border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'bg-gray-900 border-r border-gray-200/50 shadow-lg'} text-white
-          ${isExpanded ? 'w-64' : 'w-16'} flex flex-col`}
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${theme === 'dark' ? 'bg-black/20 backdrop-blur-md border-r border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'bg-[#464646] border-r border-[#6f6f6f]/50 shadow-lg'} text-[#f8f8f8]
+          ${isExpanded ? 'w-[75vw] sm:w-64 md:w-64' : 'w-16'} flex flex-col`}
         style={{
           backfaceVisibility: 'hidden', // Melhora a performance da animação
           WebkitBackfaceVisibility: 'hidden',
@@ -119,13 +119,23 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
             </div>
           </div>
           <div className="flex items-center">
-            <button 
-              className="transform transition-transform duration-200 hover:scale-110 focus:outline-none hidden md:block mr-2"
-              onClick={toggleSidebar}
-              title={isExpanded ? 'Recolher menu' : 'Expandir menu'}
-            >
-              <i className={`bx ${isExpanded ? 'bx-chevron-left' : 'bx-chevron-right'} text-xl`}></i>
-            </button>
+            {isExpanded ? (
+              <button 
+                className="transform transition-transform duration-200 hover:scale-110 focus:outline-none hidden md:block mr-2"
+                onClick={toggleSidebar}
+                title="Recolher menu"
+              >
+                <i className="bx bx-chevron-left text-xl"></i>
+              </button>
+            ) : (
+              <button 
+                className="transform transition-transform duration-200 hover:scale-110 focus:outline-none hidden md:block mr-2"
+                onClick={toggleSidebar}
+                title="Expandir menu"
+              >
+                <i className="bx bx-chevron-right text-xl"></i>
+              </button>
+            )}
             <button 
               className="md:hidden transform transition-transform duration-200 hover:scale-110 focus:outline-none"
               onClick={closeSidebar}
@@ -164,13 +174,13 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
           {/* Theme Toggle Switch */}
           <div className="p-2 mt-auto border-t border-opacity-20 border-[var(--sidebar-text)] w-full">
             <div 
-              className="flex items-center justify-center w-full p-2 rounded-lg transition-all duration-200 hover:bg-[var(--sidebar-hover)] hover:shadow-md relative group"
+              className="flex items-center justify-center w-full p-2 rounded-lg transition-all duration-200 cursor-pointer"
               title={!isExpanded ? 'Alternar tema' : ''}
             >
               {isExpanded ? (
                 <>
                   {/* Layout para sidebar expandida */}
-                  <i className={`bx bx-sun text-xl ${theme === 'light' ? 'text-[var(--warning)]' : 'opacity-50'} mr-2`}></i>
+                  <i className={`bx bx-sun text-xl ${theme === 'light' ? 'text-amber-300' : 'opacity-50'} mr-2`}></i>
                   
                   {/* Switch Interruptor */}
                   <div className="relative flex items-center">
@@ -225,20 +235,21 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
       </div>
 
       {/* Mobile Header com animações */}
-      <header className={`md:hidden ${theme === 'dark' ? 'bg-black/20 backdrop-blur-md border-b border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'bg-white/70 backdrop-blur-md border-b border-gray-200/50'} text-[var(--sidebar-text)] p-4 flex items-center justify-between shadow-md`}>
+      <header className={`fixed top-0 left-0 right-0 z-40 md:hidden ${theme === 'dark' ? 'bg-black/20 backdrop-blur-md border-b border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'bg-white/70 backdrop-blur-md border-b border-gray-200/50'} text-[var(--sidebar-text)] px-3 py-2 flex items-center justify-between shadow-md`}>
         <button 
           onClick={openSidebar}
-          className="transform transition-transform duration-200 hover:scale-110 focus:outline-none"
+          className="transform transition-transform duration-200 hover:scale-110 focus:outline-none p-1 -ml-1"
+          aria-label="Abrir menu"
         >
-          <i className="bx bx-menu text-2xl"></i>
+          <i className="bx bx-menu text-xl sm:text-2xl"></i>
         </button>
         <div className="flex items-center">
           <img 
             src="/assets/logo.png" 
             alt="Logo Metrologia Compactor" 
-            className="h-8 mr-1" 
+            className="h-5 sm:h-7 mr-1" 
           />
-          <h1 className="text-xl font-semibold transform transition-transform duration-200">Metrologia Compactor</h1>
+          <h1 className="text-sm sm:text-lg font-semibold transform transition-transform duration-200 truncate max-w-[140px] sm:max-w-[220px] md:max-w-none">{title || 'Metrologia Compactor'}</h1>
         </div>
         <div className="w-8"></div> {/* Spacer for alignment */}
       </header>
