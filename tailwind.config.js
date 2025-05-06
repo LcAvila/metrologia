@@ -13,6 +13,7 @@ module.exports = {
     },
   },
   plugins: [],
+  darkMode: 'class', // Habilita o modo escuro baseado em classe (light/dark no html)
   // Configuração otimizada para produção
   future: {
     hoverOnlyWhenSupported: true, // Melhora performance em dispositivos móveis

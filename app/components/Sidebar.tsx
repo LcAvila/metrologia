@@ -125,7 +125,7 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                 onClick={toggleSidebar}
                 title="Recolher menu"
               >
-                <i className="bx bx-chevron-left text-xl"></i>
+                <i className="bx bx-chevron-left text-xl text-white"></i>
               </button>
             ) : (
               <button 
@@ -133,14 +133,14 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                 onClick={toggleSidebar}
                 title="Expandir menu"
               >
-                <i className="bx bx-chevron-right text-xl"></i>
+                <i className="bx bx-chevron-right text-xl text-white"></i>
               </button>
             )}
             <button 
               className="md:hidden transform transition-transform duration-200 hover:scale-110 focus:outline-none"
               onClick={closeSidebar}
             >
-              <i className="bx bx-x text-2xl"></i>
+              <i className="bx bx-x text-2xl text-white"></i>
             </button>
           </div>
         </div>
@@ -158,7 +158,8 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                   className="flex items-center p-2 rounded-lg transition-all duration-200 hover:bg-[var(--sidebar-hover)] hover:shadow-md relative group"
                   title={!isExpanded ? item.text : ''}
                 >
-                  <i className={`bx ${item.icon} ${isExpanded ? 'mr-2' : 'mx-auto'} text-xl`}></i>
+                  {/* Apply sidebar text color directly */}
+                  <i className={`bx ${item.icon} ${isExpanded ? 'mr-2' : 'mx-auto'} text-xl text-[var(--sidebar-text)]`}></i>
                   {isExpanded ? (
                     <span className="transition-opacity duration-300">{item.text}</span>
                   ) : (
@@ -172,10 +173,10 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
           </ul>
           
           {/* Theme Toggle Switch */}
+          {/* Theme Toggle Switch */}
           <div className="p-2 mt-auto border-t border-opacity-20 border-[var(--sidebar-text)] w-full">
             <div 
               className="flex items-center justify-center w-full p-2 rounded-lg transition-all duration-200 cursor-pointer"
-              title={!isExpanded ? 'Alternar tema' : ''}
             >
               {isExpanded ? (
                 <>
@@ -196,11 +197,13 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                     </label>
                   </div>
                   
-                  <i className={`bx bx-moon text-xl ${theme === 'dark' ? 'text-[var(--primary)]' : 'opacity-50'} ml-2`}></i>
+                  {/* Use light/dark variants for moon icon color */}
+                  <i className={`bx bx-moon text-xl ml-2 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
                 </>
               ) : (
                 <>
                   {/* Layout para sidebar recolhida - centralizado verticalmente */}
+                  {/* Removed redundant group class, parent div now has it */}
                   <div className="flex flex-col items-center">
                     <i className={`bx bx-sun text-xl ${theme === 'light' ? 'text-[var(--warning)]' : 'opacity-50'} mb-1`}></i>
                     
@@ -218,7 +221,8 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                       </label>
                     </div>
                     
-                    <i className={`bx bx-moon text-xl ${theme === 'dark' ? 'text-[var(--primary)]' : 'opacity-50'} mt-1`}></i>
+                    {/* Use light/dark variants for moon icon color */}
+                    <i className={`bx bx-moon text-xl mt-1 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
                   </div>
                 </>
               )}
@@ -226,7 +230,7 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
               {/* Tooltip para quando recolhido */}
               {!isExpanded && (
                 <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md">
-                  
+                  Alternar tema
                 </span>
               )}
             </div>
@@ -241,7 +245,8 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
           className="transform transition-transform duration-200 hover:scale-110 focus:outline-none p-1 -ml-1"
           aria-label="Abrir menu"
         >
-          <i className="bx bx-menu text-xl sm:text-2xl"></i>
+          {/* Use light/dark variants for menu icon color */}
+          <i className={`bx bx-menu text-xl sm:text-2xl text-[var(--sidebar-text)] light:text-[var(--foreground)]`}></i>
         </button>
         <div className="flex items-center">
           <img 

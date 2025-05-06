@@ -142,6 +142,14 @@ button, a, [role="button"], .pointer {
   cursor: not-allowed;
 }
 
+/* Estilos para ícones baseados no tema */
+/* Estilos para ícones baseados no tema */
+/* (Regras específicas removidas, serão tratadas no componente) */
+
+.dark .bx {
+  color: #ffffff; /* Branco no modo escuro */
+}
+
 /* Media queries para responsividade */
 @media (max-width: 640px) {
   body {

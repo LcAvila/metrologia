@@ -60,10 +60,21 @@ export default function Home() {
     return 'ok';
   }, []);
   
+  // Função para abrir o modal com os detalhes do equipamento
+  const openModal = useCallback((equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setIsModalOpen(true);
+  }, []);
+
   // Função para formatar data - memoizada para evitar recálculos
   const formatDate = useCallback((dateString: string) => {
+    // Adiciona um dia para corrigir o problema da data que aparece um dia antes
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }, []);
   
   // Função para obter texto do status - memoizada para evitar recálculos
@@ -223,15 +234,12 @@ export default function Home() {
                 <tbody className="bg-[var(--card-bg)] divide-y divide-[var(--card-border)] transition-colors duration-300">
                   {paginatedEquipments.length > 0 ? (
                     paginatedEquipments.map((equipment) => (
-                      <tr 
-                        key={equipment.id} 
-                        className="hover:bg-[var(--card-border)] transition-colors duration-300 cursor-pointer"
-                        onDoubleClick={() => {
-                          setSelectedEquipment(equipment);
-                          setIsModalOpen(true);
-                        }}
+                      <tr key={equipment.id} className="bg-[var(--table-row-bg)] border-b border-[var(--border)] hover:bg-[var(--table-row-hover-bg)] transition-colors duration-150 cursor-pointer"
+                        onClick={() => openModal(equipment)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">{equipment.id}</td>
+                        <td className="px-4 py-2 text-xs sm:text-sm text-[var(--foreground)] whitespace-nowrap">
+                          {equipment.id}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">{equipment.type}</td>
                         <td className="px-6 py-4 whitespace-nowrap">{equipment.sector}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -247,30 +255,38 @@ export default function Home() {
                              'Descartado'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">{equipment.lastCalibration}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{formatDate(equipment.lastCalibration)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getCalibrationStatus(equipment.nextCalibration) === 'expired' ? 'bg-red-100 text-red-800' : getCalibrationStatus(equipment.nextCalibration) === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                            {equipment.nextCalibration}
+                            {formatDate(equipment.nextCalibration)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--muted)]">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--muted)] space-x-2">
                           <button 
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                            onClick={() => editEquipment(equipment.id)}
+                            className="p-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1 inline-flex items-center justify-center"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editEquipment(equipment.id);
+                            }}
+                            title="Editar"
                           >
-                            <i className="bx bx-edit"></i>
+                            <i className="bx bx-edit-alt text-lg"></i>
                           </button>
                           <button 
-                            className="text-red-600 hover:text-red-900"
-                            onClick={() => deleteEquipment(equipment.id)}
+                            className="p-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1 inline-flex items-center justify-center"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteEquipment(equipment.id);
+                            }}
+                            title="Excluir"
                           >
-                            <i className="bx bx-trash"></i>
+                            <i className="bx bx-trash text-lg"></i>
                           </button>
                         </td>
                       </tr>
                     ))
                   ) : (
-                    <tr>
+                    <tr key="no-equipment-row">
                       <td colSpan={7} className="px-6 py-4 text-center text-[var(--muted)]">
                         Nenhum equipamento encontrado
                       </td>
@@ -291,16 +307,30 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded transition-colors duration-300 ${currentPage === 1 ? 'bg-[var(--card-border)] text-[var(--muted)] cursor-not-allowed' : 'bg-[var(--button-bg)] text-[var(--button-text)] hover:bg-[var(--button-hover)]'}`}
+                  className={`px-4 py-2 rounded-md transition-colors duration-300 ${
+                    currentPage === 1 
+                    ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
                 >
-                  Anterior
+                  <div className="flex items-center space-x-1">
+                    <i className="bx bx-chevron-left"></i>
+                    <span>Anterior</span>
+                  </div>
                 </button>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded transition-colors duration-300 ${currentPage === totalPages ? 'bg-[var(--card-border)] text-[var(--muted)] cursor-not-allowed' : 'bg-[var(--button-bg)] text-[var(--button-text)] hover:bg-[var(--button-hover)]'}`}
+                  className={`px-4 py-2 rounded-md transition-colors duration-300 ${
+                    currentPage === totalPages 
+                    ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
                 >
-                  Próximo
+                  <div className="flex items-center space-x-1">
+                    <span>Próximo</span>
+                    <i className="bx bx-chevron-right"></i>
+                  </div>
                 </button>
               </div>
             </div>
@@ -351,6 +381,11 @@ export default function Home() {
                           <a 
                             href={`/certificados/${selectedEquipment.certificateFile}`} 
                             target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              window.open(`/api/view-pdf?file=/certificados/${selectedEquipment.certificateFile}`, '_blank');
+                            }}
                             className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
                           >
                             Certificado de Calibração
@@ -363,6 +398,11 @@ export default function Home() {
                           <a 
                             href={`/registros/${selectedEquipment.dataRecordFile}`} 
                             target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              window.open(`/api/view-pdf?file=/registros/${selectedEquipment.dataRecordFile}`, '_blank');
+                            }}
                             className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
                           >
                             Registro de Dados
@@ -379,13 +419,13 @@ export default function Home() {
                       editEquipment(selectedEquipment.id);
                       setIsModalOpen(false);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 bg-[var(--muted)] text-[var(--foreground)] rounded hover:opacity-90 transition-colors duration-300"
+                    className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                   >
                     Fechar
                   </button>
@@ -396,4 +436,3 @@ export default function Home() {
         </Layout>
   );
 }
-

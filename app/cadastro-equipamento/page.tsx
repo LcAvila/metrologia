@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
+import InputFileUpload from '../components/InputFileUpload'; // Adicionar importação
 
 interface Equipment {
   id: string; // Renomeado de nomenclature para ID
@@ -96,7 +97,26 @@ export default function CadastroEquipamento() {
     // Verificar se há um equipamento para edição no localStorage
     const editingEquipment = localStorage.getItem('editingEquipment');
     if (editingEquipment) {
-      setEquipment(JSON.parse(editingEquipment));
+      const parsedEquipment = JSON.parse(editingEquipment);
+      // Garante que todos os campos tenham um valor definido, usando '' como padrão
+      setEquipment(prev => ({
+        ...prev, // Mantém os padrões iniciais
+        ...parsedEquipment, // Sobrescreve com os valores carregados
+        id: parsedEquipment.id ?? '',
+        type: parsedEquipment.type ?? '',
+        sector: parsedEquipment.sector ?? '',
+        status: parsedEquipment.status ?? '',
+        lastCalibration: parsedEquipment.lastCalibration ?? '',
+        nextCalibration: parsedEquipment.nextCalibration ?? '',
+        standardLocation: parsedEquipment.standardLocation ?? '',
+        currentLocation: parsedEquipment.currentLocation ?? '',
+        measurementRange: parsedEquipment.measurementRange ?? '',
+        model: parsedEquipment.model ?? '',
+        serialNumber: parsedEquipment.serialNumber ?? '',
+        manufacturer: parsedEquipment.manufacturer ?? '',
+        certificateFile: parsedEquipment.certificateFile ?? '',
+        dataRecordFile: parsedEquipment.dataRecordFile ?? ''
+      }));
       // Limpar dados de edição após carregar
       localStorage.removeItem('editingEquipment');
     }
@@ -361,44 +381,24 @@ export default function CadastroEquipamento() {
                 </div>
                 <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="certificateFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificado</label>
-                  <div className="flex items-center w-full p-1.5 sm:p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-300">
-                    <i className="bx bx-file text-xl mr-2"></i>
-                    <input 
-                      type="file" 
-                      id="certificateFile" 
-                      name="certificateFile" 
-                      onChange={handleFileChange}
-                      className="flex-1"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                    />
-                  </div>
+                  <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" />
                 </div>
                 <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="dataRecordFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Registro de Dados</label>
-                  <div className="flex items-center w-full p-1.5 sm:p-2 border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors duration-300">
-                    <i className="bx bx-upload text-xl mr-2"></i>
-                    <input 
-                      type="file" 
-                      id="dataRecordFile" 
-                      name="dataRecordFile" 
-                      onChange={handleFileChange}
-                      className="flex-1"
-                      accept=".pdf,.csv,.xlsx,.xls,.txt"
-                    />
-                  </div>
+                  <InputFileUpload onChange={handleFileChange} name="dataRecordFile" accept=".pdf,.csv,.xlsx,.xls,.txt" />
                 </div>
               </div>
             </div>
               <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
                 <Link 
                   href="/" 
-                  className="px-4 py-2 bg-[var(--muted)] text-white rounded hover:opacity-90 transition-colors duration-300 text-center"
+                  className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 text-center"
                 >
                   Cancelar
                 </Link>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 bg-[var(--button-bg)] text-[var(--button-text)] rounded hover:bg-[var(--button-hover)] transition-colors duration-300 text-center w-full sm:w-auto"
+                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 text-center w-full sm:w-auto"
                 >
                   Salvar
                 </button>

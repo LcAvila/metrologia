@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import Layout from '../components/Layout';
 import { useTheme } from '../context/ThemeContext';
 import Link from 'next/link';
+import InputFileUpload from '../components/InputFileUpload'; // Adicionando a importação
 
 // Interface para o certificado
 interface Certificate {
@@ -244,13 +245,13 @@ export default function Certificados() {
           {/* Alternar visualização */}
           <div className="flex border border-[var(--input-border)] rounded-md overflow-hidden">
             <button
-              className={`px-3 py-1.5 ${viewMode === 'grid' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input-bg)] text-[var(--foreground)]'}`}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors duration-300 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-[var(--primary)] ${viewMode === 'grid' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input-bg)] text-[var(--foreground)] hover:bg-[var(--background)]'}`}
               onClick={() => setViewMode('grid')}
             >
               Grid
             </button>
             <button
-              className={`px-3 py-1.5 ${viewMode === 'list' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input-bg)] text-[var(--foreground)]'}`}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors duration-300 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-[var(--primary)] ${viewMode === 'list' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--input-bg)] text-[var(--foreground)] hover:bg-[var(--background)]'}`}
               onClick={() => setViewMode('list')}
             >
               Lista
@@ -259,15 +260,15 @@ export default function Certificados() {
           
           {/* Botão de relatório */}
           <button
-            className="px-3 py-1.5 bg-[var(--secondary)] text-white rounded-md hover:bg-opacity-90 transition-colors"
+            className="px-3 py-1.5 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
             onClick={generateReport}
           >
             Gerar Relatório
           </button>
           
-          {/* Botão de upload */}
+          {/* Botão de upload - Mantido como está, conforme solicitado */}
           <button
-            className="px-3 py-1.5 bg-[var(--primary)] text-white rounded-md hover:bg-opacity-90 transition-colors"
+            className="px-3 py-1.5 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2"
             onClick={() => setShowUploadModal(true)}
           >
             Upload Certificado
@@ -281,7 +282,7 @@ export default function Certificados() {
           <div className="text-center py-8">
             <p className="text-[var(--foreground-muted)] text-lg">Nenhum certificado encontrado.</p>
             <button
-              className="mt-4 px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-opacity-90 transition-colors"
+              className="mt-4 px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2"
               onClick={() => setShowUploadModal(true)}
             >
               Adicionar Certificado
@@ -311,7 +312,7 @@ export default function Certificados() {
                   </div>
                   <div className="flex justify-between">
                     <button 
-                      className="text-sm text-[var(--primary)] hover:underline"
+                      className="text-sm text-[var(--primary)] hover:underline focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
                       onClick={() => {
                         const history = getCalibrationHistory(cert.equipmentId);
                         console.log(`Histórico de calibrações para ${cert.equipmentName}:`, history);
@@ -324,7 +325,7 @@ export default function Certificados() {
                       href={cert.fileUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-sm text-[var(--primary)] hover:underline"
+                      className="text-sm text-[var(--primary)] hover:underline focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
                     >
                       Visualizar PDF
                     </a>
@@ -357,7 +358,7 @@ export default function Certificados() {
                     <td className="px-4 py-3 text-sm">
                       <div className="flex space-x-2">
                         <button 
-                          className="text-[var(--primary)] hover:underline"
+                          className="text-[var(--primary)] hover:underline text-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
                           onClick={() => {
                             const history = getCalibrationHistory(cert.equipmentId);
                             console.log(`Histórico de calibrações para ${cert.equipmentName}:`, history);
@@ -370,7 +371,7 @@ export default function Certificados() {
                           href={cert.fileUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-[var(--primary)] hover:underline"
+                          className="text-[var(--primary)] hover:underline text-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
                         >
                           Visualizar
                         </a>
@@ -460,20 +461,7 @@ export default function Certificados() {
               <div>
                 <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Arquivo do Certificado</label>
                 <div className="flex items-center">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileChange}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-2 bg-[var(--secondary)] text-white rounded-md hover:bg-opacity-90 transition-colors"
-                  >
-                    Selecionar Arquivo
-                  </button>
+                  <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" />
                   <span className="ml-3 text-sm text-[var(--foreground-muted)] truncate">
                     {newCertificate.fileName || "Nenhum arquivo selecionado"}
                   </span>
@@ -483,13 +471,13 @@ export default function Certificados() {
             
             <div className="mt-6 flex justify-end space-x-3">
               <button
-                className="px-4 py-2 border border-[var(--card-border)] text-[var(--foreground)] rounded-md hover:bg-[var(--background)] transition-colors"
+                className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                 onClick={() => setShowUploadModal(false)}
               >
                 Cancelar
               </button>
               <button
-                className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-opacity-90 transition-colors"
+                className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleSaveCertificate}
                 disabled={!newCertificate.equipmentId || !newCertificate.certificateNumber || !newCertificate.expirationDate || !newCertificate.fileName}
               >
@@ -500,5 +488,5 @@ export default function Certificados() {
         </div>
       )}
     </Layout>
-  );
-}
+    )
+  };
