@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
-import InputFileUpload from '../components/InputFileUpload'; // Adicionar importação
+import InputFileUpload from '../components/InputFileUpload'; 
+import { NotificationProvider, useNotification } from '../context/NotificationContext';
 
 interface Equipment {
-  id: string; // Renomeado de nomenclature para ID
+  id: string; 
   type: string;
   sector: string;
   status: string;
@@ -73,8 +74,10 @@ const equipmentPrefixes: Record<string, string> = {
   'Espectrofotômetro': 'ESP'
 };
 
-export default function CadastroEquipamento() {
+// Componente interno que usa o hook useNotification
+function CadastroEquipamentoContent() {
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [equipment, setEquipment] = useState<Equipment>({
     id: '',
     type: '',
@@ -152,7 +155,7 @@ export default function CadastroEquipamento() {
     const idRegex = new RegExp(`^${prefix}-\\d{3}$`);
     
     if (!idRegex.test(equipment.id)) {
-      alert(`O ID deve seguir o padrão ${prefix}-XXX, onde XXX são números (ex: ${prefix}-001)`);
+      showNotification('error', `O ID deve seguir o padrão ${prefix}-XXX, onde XXX são números (ex: ${prefix}-001)`);
       return;
     }
 
@@ -167,15 +170,19 @@ export default function CadastroEquipamento() {
     const existingIndex = equipments.findIndex(eq => eq.id === equipment.id);
     if (existingIndex >= 0) {
       equipments[existingIndex] = equipment;
+      showNotification('success', 'Equipamento atualizado com sucesso!');
     } else {
       equipments.push(equipment);
+      showNotification('success', 'Novo equipamento cadastrado com sucesso!');
     }
 
     // Salvar no localStorage
     localStorage.setItem('equipments', JSON.stringify(equipments));
     
     // Usar o router do Next.js para navegação sem recarregar a página
-    router.push('/');
+    setTimeout(() => {
+      router.push('/');
+    }, 1000); // Pequeno atraso para que o usuário veja a notificação
   };
 
   return (
@@ -379,10 +386,10 @@ export default function CadastroEquipamento() {
                     placeholder="Ex: 0-150mm, 0-10kg"
                   />
                 </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="certificateFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificado</label>
-                  <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" />
-                </div>
+                  <div className="col-span-1 sm:col-span-2 md:col-span-1">
+                    <label htmlFor="certificateFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificado</label>
+                      <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" /> 
+                  </div>
                 <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="dataRecordFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Registro de Dados</label>
                   <InputFileUpload onChange={handleFileChange} name="dataRecordFile" accept=".pdf,.csv,.xlsx,.xls,.txt" />
@@ -406,5 +413,14 @@ export default function CadastroEquipamento() {
             </form>
           </div>
         </Layout>
+  );
+}
+
+// Componente exportado que fornece o contexto de notificação
+export default function CadastroEquipamento() {
+  return (
+    <NotificationProvider>
+      <CadastroEquipamentoContent />
+    </NotificationProvider>
   );
 }

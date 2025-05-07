@@ -191,6 +191,43 @@ button, a, [role="button"], .pointer {
   }
 }
 
+/* Animações para notificações */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) translateY(-5px);
+  }
+  70% {
+    transform: scale(0.95) translateY(3px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-out {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.notification-enter {
+  animation: bounce-in 0.5s ease-out forwards;
+}
+
+.notification-exit {
+  animation: slide-out 0.3s ease-in forwards;
+}
+
 /* Ajustes para telas de toque */
 @media (hover: none) {
   /* Aumentar área de toque para elementos interativos */
