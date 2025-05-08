@@ -31,6 +31,10 @@ export default function Home() {
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Adicione estes novos estados para o modal de confirmação
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [equipmentToDelete, setEquipmentToDelete] = useState<{id: string, type?: string} | null>(null);
+
   useEffect(() => {
     // Usar uma função para carregar os dados do localStorage apenas uma vez
     const loadEquipments = () => {
@@ -99,9 +103,17 @@ export default function Home() {
   }, [equipments]);
   
   // Função para excluir equipamento - otimizada para evitar renderizações desnecessárias
+  // Modifique a função deleteEquipment para abrir o modal em vez de usar confirm()
   const deleteEquipment = useCallback((id: string) => {
-    if (confirm('Tem certeza que deseja excluir este equipamento? Esta ação não pode ser desfeita.')) {
-      const updatedEquipments = equipments.filter(eq => eq.id !== id);
+    const equipment = equipments.find(eq => eq.id === id);
+    setEquipmentToDelete({ id, type: equipment?.type });
+    setIsDeleteModalOpen(true);
+  }, [equipments]);
+  
+  // Adicione uma nova função para confirmar a exclusão
+  const confirmDelete = useCallback(() => {
+    if (equipmentToDelete) {
+      const updatedEquipments = equipments.filter(eq => eq.id !== equipmentToDelete.id);
       setEquipments(updatedEquipments);
       
       setTimeout(() => {
@@ -109,8 +121,10 @@ export default function Home() {
       }, 0);
       
       setCurrentPage(1);
+      setIsDeleteModalOpen(false);
+      setEquipmentToDelete(null);
     }
-  }, [equipments]);
+  }, [equipments, equipmentToDelete, setCurrentPage]);
 
   // Memoizar a filtragem para evitar recálculos desnecessários em cada renderização
   const filteredEquipments = useMemo(() => {
@@ -433,6 +447,39 @@ export default function Home() {
               </div>
             </div>
           )}
-        </Layout>
-  );
+        {/* Modal de Confirmação de Exclusão */}
+        {isDeleteModalOpen && equipmentToDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-[var(--card-bg)] rounded-lg p-6 max-w-md w-full">
+                <div className="flex flex-col items-center text-center mb-4">
+                  <div className="bg-red-100 p-3 rounded-full mb-4">
+                    <i className="bx bx-trash text-red-600 text-3xl"></i>
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Confirmar Exclusão</h2>
+                  <p className="text-[var(--muted)] mb-4">
+                    Tem certeza que deseja excluir o equipamento <span className="font-semibold">{equipmentToDelete.id}</span>?
+                    <br />
+                    Esta ação não pode ser desfeita.
+                  </p>
+                </div>
+                
+                <div className="flex justify-center space-x-4">
+                  <button 
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+      </Layout>
+    );
 }
