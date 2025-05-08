@@ -393,12 +393,12 @@ export default function Home() {
                         <div className="flex items-center space-x-2">
                           <i className="bx bx-file text-xl"></i>
                           <a 
-                            href={`/certificados/${selectedEquipment.certificateFile}`} 
+                            href={`/api/view-pdf?file=${selectedEquipment.certificateFile}`} 
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => {
                               e.preventDefault();
-                              window.open(`/api/view-pdf?file=/certificados/${selectedEquipment.certificateFile}`, '_blank');
+                              window.open(`/api/view-pdf?file=${selectedEquipment.certificateFile}`, '_blank');
                             }}
                             className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
                           >
@@ -410,12 +410,12 @@ export default function Home() {
                         <div className="flex items-center space-x-2">
                           <i className="bx bx-spreadsheet text-xl"></i>
                           <a 
-                            href={`/registros/${selectedEquipment.dataRecordFile}`} 
+                            href={`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`} 
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => {
                               e.preventDefault();
-                              window.open(`/api/view-pdf?file=/registros/${selectedEquipment.dataRecordFile}`, '_blank');
+                              window.open(`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`, '_blank');
                             }}
                             className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
                           >

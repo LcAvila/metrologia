@@ -21,6 +21,8 @@ interface Equipment {
   manufacturer?: string; // Fabricante
   certificateFile?: string; // Certificado (nome do arquivo)
   dataRecordFile?: string; // Registro de dados (nome do arquivo)
+  certificateFileObject?: File; // Objeto File para upload
+  dataRecordFileObject?: File; // Objeto File para upload
 }
 
 // Mapeamento de tipos de equipamento para prefixos
@@ -133,20 +135,48 @@ function CadastroEquipamentoContent() {
     }));
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const fieldName = e.target.name;
-      // Em uma aplicação real, aqui você faria o upload do arquivo para um servidor
-      // Por enquanto, apenas armazenamos o nome do arquivo
+      
+      // Armazenar temporariamente o arquivo para upload posterior
       setEquipment(prev => ({
         ...prev,
-        [fieldName]: file.name
+        [fieldName]: file.name,
+        [`${fieldName}Object`]: file // Armazenar o objeto File para upload posterior
       }));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    try {
+      // Criar FormData para enviar o arquivo
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', folder);
+      
+      // Enviar o arquivo para a API de upload
+      const response = await fetch('/api/upload-file', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.filePath; // Retornar o caminho do arquivo
+      } else {
+        console.error('Erro ao fazer upload:', result.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Falha na requisição de upload:', error);
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validar ID
@@ -157,6 +187,29 @@ function CadastroEquipamentoContent() {
     if (!idRegex.test(equipment.id)) {
       showNotification('error', `O ID deve seguir o padrão ${prefix}-XXX, onde XXX são números (ex: ${prefix}-001)`);
       return;
+    }
+    
+    // Processar uploads de arquivos
+    let equipmentToSave = { ...equipment };
+    
+    // Upload do certificado se existir
+    if (equipment.certificateFileObject) {
+      const certificatePath = await uploadFile(equipment.certificateFileObject, 'certificados');
+      if (certificatePath) {
+        equipmentToSave.certificateFile = certificatePath;
+      }
+      // Remover o objeto File antes de salvar
+      delete equipmentToSave.certificateFileObject;
+    }
+    
+    // Upload do registro de dados se existir
+    if (equipment.dataRecordFileObject) {
+      const dataRecordPath = await uploadFile(equipment.dataRecordFileObject, 'registros');
+      if (dataRecordPath) {
+        equipmentToSave.dataRecordFile = dataRecordPath;
+      }
+      // Remover o objeto File antes de salvar
+      delete equipmentToSave.dataRecordFileObject;
     }
 
     // Carregar equipamentos existentes
@@ -169,10 +222,10 @@ function CadastroEquipamentoContent() {
     // Verificar se o ID já existe
     const existingIndex = equipments.findIndex(eq => eq.id === equipment.id);
     if (existingIndex >= 0) {
-      equipments[existingIndex] = equipment;
+      equipments[existingIndex] = equipmentToSave;
       showNotification('success', 'Equipamento atualizado com sucesso!');
     } else {
-      equipments.push(equipment);
+      equipments.push(equipmentToSave);
       showNotification('success', 'Novo equipamento cadastrado com sucesso!');
     }
 

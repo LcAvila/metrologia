@@ -17,6 +17,7 @@ interface Certificate {
   fileName: string;
   fileUrl: string;
   status: 'valid' | 'expired' | 'expiring';
+  fileObject?: File; // Propriedade opcional para armazenar o objeto File temporariamente
 }
 
 export default function Certificados() {
@@ -38,7 +39,8 @@ export default function Certificados() {
     issueDate: '',
     expirationDate: '',
     calibrationDate: '',
-    fileName: ''
+    fileName: '',
+    fileObject: undefined
   });
 
   // Carregar certificados e equipamentos do localStorage ao iniciar
@@ -122,56 +124,89 @@ export default function Certificados() {
   };
 
   // Manipular upload de arquivo
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Armazenar temporariamente o arquivo para upload posterior
       setNewCertificate(prev => ({
         ...prev,
-        fileName: file.name
+        fileName: file.name,
+        fileObject: file // Armazenar o objeto File para upload posterior
       }));
     }
   };
 
   // Salvar novo certificado
-  const handleSaveCertificate = () => {
-    // Simular URL do arquivo (em produção, seria um link real após upload)
-    const fileUrl = `data:application/pdf;base64,${Math.random().toString(36).substring(2)}`;
-    
-    const today = new Date();
-    const expirationDate = new Date(newCertificate.expirationDate);
-    let status: 'valid' | 'expired' | 'expiring' = 'valid';
-    
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(today.getDate() + 30);
-    
-    if (expirationDate < today) {
-      status = 'expired';
-    } else if (expirationDate <= thirtyDaysFromNow) {
-      status = 'expiring';
+  const handleSaveCertificate = async () => {
+    // Verificar se há um arquivo para upload
+    if (newCertificate.fileObject) {
+      try {
+        // Criar FormData para enviar o arquivo
+        const formData = new FormData();
+        formData.append('file', newCertificate.fileObject);
+        formData.append('folder', 'certificados');
+        
+        // Enviar o arquivo para a API de upload
+        const response = await fetch('/api/upload-file', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Usar o caminho real do arquivo retornado pela API
+          const today = new Date();
+          const expirationDate = new Date(newCertificate.expirationDate);
+          let status: 'valid' | 'expired' | 'expiring' = 'valid';
+          
+          const thirtyDaysFromNow = new Date();
+          thirtyDaysFromNow.setDate(today.getDate() + 30);
+          
+          if (expirationDate < today) {
+            status = 'expired';
+          } else if (expirationDate <= thirtyDaysFromNow) {
+            status = 'expiring';
+          }
+          
+          // Criar o objeto certificado com o caminho real do arquivo
+          const certificate: Certificate = {
+            ...newCertificate,
+            id: Date.now().toString(),
+            fileUrl: result.filePath, // Usar o caminho real retornado pela API
+            status,
+            fileObject: undefined // Remover o objeto File antes de salvar
+          };
+          
+          const updatedCertificates = [...certificates, certificate];
+          setCertificates(updatedCertificates);
+          
+          // Salvar no localStorage (sem o objeto File)
+          localStorage.setItem('calibrationCertificates', JSON.stringify(updatedCertificates));
+          
+          // Resetar formulário e fechar modal
+          setNewCertificate({ 
+            equipmentId: '',
+            equipmentName: '',
+            certificateNumber: '',
+            issueDate: '',
+            expirationDate: '',
+            calibrationDate: '',
+            fileName: '',
+            fileObject: undefined
+          });
+          setShowUploadModal(false);
+        } else {
+          console.error('Erro ao fazer upload:', result.error);
+          alert('Erro ao fazer upload do arquivo. Por favor, tente novamente.');
+        }
+      } catch (error) {
+        console.error('Falha na requisição de upload:', error);
+        alert('Erro ao fazer upload do arquivo. Por favor, tente novamente.');
+      }
+    } else {
+      alert('Por favor, selecione um arquivo para upload.');
     }
-    
-    const certificate: Certificate = {
-      ...newCertificate,
-      id: Date.now().toString(),
-      fileUrl,
-      status
-    };
-    
-    const updatedCertificates = [...certificates, certificate];
-    setCertificates(updatedCertificates);
-    localStorage.setItem('calibrationCertificates', JSON.stringify(updatedCertificates));
-    
-    // Resetar formulário e fechar modal
-    setNewCertificate({ 
-      equipmentId: '',
-      equipmentName: '',
-      certificateNumber: '',
-      issueDate: '',
-      expirationDate: '',
-      calibrationDate: '',
-      fileName: ''
-    });
-    setShowUploadModal(false);
   };
 
   // Gerar relatório de certificados
@@ -322,10 +357,14 @@ export default function Certificados() {
                       Ver histórico
                     </button>
                     <a 
-                      href={cert.fileUrl} 
+                      href={`/api/view-pdf?file=${cert.fileUrl}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-sm text-[var(--primary)] hover:underline focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.open(`/api/view-pdf?file=${cert.fileUrl}`, '_blank');
+                      }}
                     >
                       Visualizar PDF
                     </a>
@@ -368,10 +407,14 @@ export default function Certificados() {
                           Histórico
                         </button>
                         <a 
-                          href={cert.fileUrl} 
+                          href={`/api/view-pdf?file=${cert.fileUrl}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-[var(--primary)] hover:underline text-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(`/api/view-pdf?file=${cert.fileUrl}`, '_blank');
+                          }}
                         >
                           Visualizar
                         </a>
