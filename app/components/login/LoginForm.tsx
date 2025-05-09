@@ -154,7 +154,6 @@ export default function LoginForm() {
               InputLabelProps={{
                 sx: {
                   color: '#888',
-                  '&:hover': { color: '#000' },
                   '&.Mui-focused': { color: 'var(--primary)' },
                   '&.MuiInputLabel-shrink': { color: 'var(--primary)' },
                 }
@@ -173,7 +172,7 @@ export default function LoginForm() {
               value={formData.password}
               onChange={handleInputChange}
               InputProps={{
-                style: { 
+                style: {
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--input-text)'
                 },
@@ -190,10 +189,22 @@ export default function LoginForm() {
                   </InputAdornment>
                 )
               }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  backgroundColor: 'var(--input-bg) !important',
+                  color: 'var(--input-text) !important',
+                },
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'var(--input-bg) !important',
+                  color: 'var(--input-text) !important',
+                },
+                '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--primary)',
+                },
+              }}
               InputLabelProps={{
                 sx: {
                   color: '#888',
-                  '&:hover': { color: '#000' },
                   '&.Mui-focused': { color: 'var(--primary)' },
                   '&.MuiInputLabel-shrink': { color: 'var(--primary)' },
                 }
