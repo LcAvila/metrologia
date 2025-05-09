@@ -133,17 +133,34 @@ export default function LoginForm() {
               value={formData.email}
               onChange={handleInputChange}
               InputProps={{
-                style: { 
+                style: {
                   backgroundColor: 'var(--input-bg)',
                   color: 'var(--input-text)'
                 }
               }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  backgroundColor: 'var(--input-bg) !important',
+                  color: 'var(--input-text) !important',
+                },
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'var(--input-bg) !important',
+                  color: 'var(--input-text) !important',
+                },
+                '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--primary)',
+                },
+              }}
               InputLabelProps={{
-                style: { color: 'var(--input-text)' }
+                sx: {
+                  color: '#888',
+                  '&:hover': { color: '#000' },
+                  '&.Mui-focused': { color: 'var(--primary)' },
+                  '&.MuiInputLabel-shrink': { color: 'var(--primary)' },
+                }
               }}
               aria-label="Endereço de e-mail"
             />
-            
             <TextField
               margin="normal"
               required
@@ -174,7 +191,12 @@ export default function LoginForm() {
                 )
               }}
               InputLabelProps={{
-                style: { color: 'var(--input-text)' }
+                sx: {
+                  color: '#888',
+                  '&:hover': { color: '#000' },
+                  '&.Mui-focused': { color: 'var(--primary)' },
+                  '&.MuiInputLabel-shrink': { color: 'var(--primary)' },
+                }
               }}
               aria-label="Senha"
             />
