@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import Layout from '../components/Layout';
 import { useTheme } from '../context/ThemeContext';
 import Link from 'next/link';
-import InputFileUpload from '../components/InputFileUpload'; // Adicionando a importação
+import InputFileUpload from '../components/InputFileUpload';
+import { getPublicUrl } from '../lib/getPublicUrl';
 
 // Interface para o certificado
 interface Certificate {
@@ -138,76 +139,55 @@ export default function Certificados() {
 
   // Salvar novo certificado
   const handleSaveCertificate = async () => {
-    // Verificar se há um arquivo para upload
     if (newCertificate.fileObject) {
       try {
-        // Criar FormData para enviar o arquivo
-        const formData = new FormData();
-        formData.append('file', newCertificate.fileObject);
-        formData.append('folder', 'certificados');
-        
-        // Enviar o arquivo para a API de upload
-        const response = await fetch('/api/upload-file', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          // Usar o caminho real do arquivo retornado pela API
-          const today = new Date();
-          const expirationDate = new Date(newCertificate.expirationDate);
-          let status: 'valid' | 'expired' | 'expiring' = 'valid';
-          
-          const thirtyDaysFromNow = new Date();
-          thirtyDaysFromNow.setDate(today.getDate() + 30);
-          
-          if (expirationDate < today) {
-            status = 'expired';
-          } else if (expirationDate <= thirtyDaysFromNow) {
-            status = 'expiring';
-          }
-          
-          // Criar o objeto certificado com o caminho real do arquivo
-          const certificate: Certificate = {
-            ...newCertificate,
-            id: Date.now().toString(),
-            fileUrl: result.filePath, // Usar o caminho real retornado pela API
-            status,
-            fileObject: undefined // Remover o objeto File antes de salvar
-          };
-          
-          const updatedCertificates = [...certificates, certificate];
-          setCertificates(updatedCertificates);
-          
-          // Salvar no localStorage (sem o objeto File)
-          localStorage.setItem('calibrationCertificates', JSON.stringify(updatedCertificates));
-          
-          // Resetar formulário e fechar modal
-          setNewCertificate({ 
-            equipmentId: '',
-            equipmentName: '',
-            certificateNumber: '',
-            issueDate: '',
-            expirationDate: '',
-            calibrationDate: '',
-            fileName: '',
-            fileObject: undefined
-          });
-          setShowUploadModal(false);
-        } else {
-          console.error('Erro ao fazer upload:', result.error);
-          alert('Erro ao fazer upload do arquivo. Por favor, tente novamente.');
+        // Upload direto para o Supabase Storage
+        const { uploadToStorage } = await import('../lib/uploadToStorage');
+        const filePath = await uploadToStorage(newCertificate.fileObject, 'certificados');
+
+        const today = new Date();
+        const expirationDate = new Date(newCertificate.expirationDate);
+        let status: 'valid' | 'expired' | 'expiring' = 'valid';
+
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+        if (expirationDate < today) {
+          status = 'expired';
+        } else if (expirationDate <= thirtyDaysFromNow) {
+          status = 'expiring';
         }
-      } catch (error) {
-        console.error('Falha na requisição de upload:', error);
-        alert('Erro ao fazer upload do arquivo. Por favor, tente novamente.');
+
+        const certificate: Certificate = {
+          ...newCertificate,
+          id: Date.now().toString(),
+          fileUrl: filePath, // Salva o caminho do Storage
+          status,
+          fileObject: undefined
+        };
+
+        const updatedCertificates = [...certificates, certificate];
+        setCertificates(updatedCertificates);
+        localStorage.setItem('calibrationCertificates', JSON.stringify(updatedCertificates));
+        setNewCertificate({
+          equipmentId: '',
+          equipmentName: '',
+          certificateNumber: '',
+          issueDate: '',
+          expirationDate: '',
+          calibrationDate: '',
+          fileName: '',
+          fileObject: undefined
+        });
+        setShowUploadModal(false);
+      } catch (error: any) {
+        alert('Erro ao fazer upload do arquivo: ' + (error.message || 'Erro desconhecido'));
       }
     } else {
       alert('Por favor, selecione um arquivo para upload.');
     }
   };
+
 
   // Gerar relatório de certificados
   const generateReport = () => {
@@ -241,39 +221,40 @@ export default function Certificados() {
         return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Expirado</span>;
       case 'expiring':
         return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Expirando</span>;
+      default:
+        return null;
     }
-  };
+  }
 
   return (
     <Layout title="Certificados">
-      {/* Barra de ferramentas */}
-      <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow border border-[var(--card-border)] mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
-        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-          {/* Pesquisa */}
-          <div className="relative w-full md:w-64">
-            <input
-              type="text"
-              placeholder="Buscar certificados..."
-              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className="absolute right-3 top-2.5 text-[var(--foreground-muted)]">
-              🔍
-            </span>
-          </div>
-          
-          {/* Filtro por equipamento */}
-          <select
-            className="w-full md:w-64 px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-            value={selectedEquipment}
-            onChange={(e) => setSelectedEquipment(e.target.value)}
-          >
-            <option value="">Todos os equipamentos</option>
-            {equipmentList.map(eq => (
-              <option key={eq.id} value={eq.id}>{eq.name}</option>
-            ))}
-          </select>
+        <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow border border-[var(--card-border)] mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            {/* Pesquisa */}
+            <div className="relative w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Buscar certificados..."
+                className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <span className="absolute right-3 top-2.5 text-[var(--foreground-muted)]">
+                🔍
+              </span>
+            </div>
+            
+            {/* Filtro por equipamento */}
+            <select
+              className="w-full md:w-64 px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              value={selectedEquipment}
+              onChange={(e) => setSelectedEquipment(e.target.value)}
+            >
+              <option value="">Todos os equipamentos</option>
+              {equipmentList.map(eq => (
+                <option key={eq.id} value={eq.id}>{eq.name}</option>
+              ))}
+            </select>
         </div>
         
         <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
@@ -330,20 +311,10 @@ export default function Certificados() {
                 <div className="p-4 border-b border-[var(--card-border)]">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium text-[var(--foreground)]">{cert.equipmentName}</h3>
-                    {renderStatus(cert.status)}
                   </div>
-                  <p className="text-sm text-[var(--foreground-muted)]">Certificado: {cert.certificateNumber}</p>
-                </div>
-                <div className="p-4 bg-[var(--background)]">
-                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                    <div>
-                      <p className="text-[var(--foreground-muted)]">Calibração:</p>
-                      <p className="text-[var(--foreground)]">{cert.calibrationDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-[var(--foreground-muted)]">Validade:</p>
-                      <p className="text-[var(--foreground)]">{cert.expirationDate}</p>
-                    </div>
+                  <div>
+                    <p className="text-[var(--foreground-muted)]">Validade:</p>
+                    <p className="text-[var(--foreground)]">{cert.expirationDate}</p>
                   </div>
                   <div className="flex justify-between">
                     <button 
@@ -357,14 +328,10 @@ export default function Certificados() {
                       Ver histórico
                     </button>
                     <a 
-                      href={`/api/view-pdf?file=${cert.fileUrl}`} 
+                      href={getPublicUrl(cert.fileUrl)}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-sm text-[var(--primary)] hover:underline focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        window.open(`/api/view-pdf?file=${cert.fileUrl}`, '_blank');
-                      }}
                     >
                       Visualizar PDF
                     </a>
@@ -407,14 +374,10 @@ export default function Certificados() {
                           Histórico
                         </button>
                         <a 
-                          href={`/api/view-pdf?file=${cert.fileUrl}`} 
+                          href={getPublicUrl(cert.fileUrl)}
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-[var(--primary)] hover:underline text-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)] rounded"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(`/api/view-pdf?file=${cert.fileUrl}`, '_blank');
-                          }}
                         >
                           Visualizar
                         </a>
@@ -427,109 +390,101 @@ export default function Certificados() {
           </div>
         )}
       </div>
-
-      {/* Modal de Upload */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[var(--card-bg)] rounded-lg shadow-lg w-full max-w-md p-6">
-            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">Upload de Certificado</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Equipamento</label>
-                <select
-                  name="equipmentId"
-                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
-                  value={newCertificate.equipmentId}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Selecione um equipamento</option>
-                  {equipmentList.map(eq => (
-                    <option key={eq.id} value={eq.id}>{eq.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Número do Certificado</label>
-                <input
-                  type="text"
-                  name="certificateNumber"
-                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
-                  value={newCertificate.certificateNumber}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Data de Calibração</label>
-                  <input
-                    type="date"
-                    name="calibrationDate"
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
-                    value={newCertificate.calibrationDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Data de Emissão</label>
-                  <input
-                    type="date"
-                    name="issueDate"
-                    className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
-                    value={newCertificate.issueDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Data de Validade</label>
-                <input
-                  type="date"
-                  name="expirationDate"
-                  className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
-                  value={newCertificate.expirationDate}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Arquivo do Certificado</label>
-                <div className="flex items-center">
-                  <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" />
-                  <span className="ml-3 text-sm text-[var(--foreground-muted)] truncate">
-                    {newCertificate.fileName || "Nenhum arquivo selecionado"}
-                  </span>
-                </div>
-              </div>
+  {/* Modal de Upload - dentro do fragmento do return */}
+  {showUploadModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[var(--card-bg)] rounded-lg shadow-lg w-full max-w-md p-6">
+        <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">Upload de Certificado</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Equipamento</label>
+            <select
+              name="equipmentId"
+              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+              value={newCertificate.equipmentId}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Selecione um equipamento</option>
+              {equipmentList.map(eq => (
+                <option key={eq.id} value={eq.id}>{eq.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Número do Certificado</label>
+            <input
+              type="text"
+              name="certificateNumber"
+              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+              value={newCertificate.certificateNumber}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Data de Calibração</label>
+              <input
+                type="date"
+                name="calibrationDate"
+                className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+                value={newCertificate.calibrationDate}
+                onChange={handleInputChange}
+                required
+              />
             </div>
-            
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
-                onClick={() => setShowUploadModal(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleSaveCertificate}
-                disabled={!newCertificate.equipmentId || !newCertificate.certificateNumber || !newCertificate.expirationDate || !newCertificate.fileName}
-              >
-                Salvar Certificado
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Data de Emissão</label>
+              <input
+                type="date"
+                name="issueDate"
+                className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+                value={newCertificate.issueDate}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Data de Validade</label>
+            <input
+              type="date"
+              name="expirationDate"
+              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+              value={newCertificate.expirationDate}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Arquivo do Certificado</label>
+            <div className="flex items-center">
+              <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" />
+              <span className="ml-3 text-sm text-[var(--foreground-muted)] truncate">
+                {newCertificate.fileName || "Nenhum arquivo selecionado"}
+              </span>
             </div>
           </div>
         </div>
-      )}
-    </Layout>
-    )
-  };
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+            onClick={() => setShowUploadModal(false)}
+          >
+            Cancelar
+          </button>
+          <button
+            className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSaveCertificate}
+            disabled={!newCertificate.equipmentId || !newCertificate.certificateNumber || !newCertificate.expirationDate || !newCertificate.fileName}
+          >
+            Salvar Certificado
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+</Layout>
+)
+}
