@@ -85,13 +85,10 @@ export default function LoginForm() {
 
   return (
     <>
-      <Box 
-        className="min-h-screen flex items-center justify-center px-4 py-8"
-      >
+      <Box className="min-h-screen flex items-center justify-center px-4 py-8">
         <div className="background-grid"></div>
         <div className="background-blur"></div>
-        
-        <Paper 
+        <Paper
           elevation={0}
           className="w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-xl bg-white/20 dark:bg-[#23272f]/30 backdrop-blur-lg border border-white/30 dark:border-[#23272f]/50"
           sx={{
@@ -211,14 +208,13 @@ export default function LoginForm() {
               }}
               aria-label="Senha"
             />
-            
-            <Button 
+            <Button
               type="submit"
               fullWidth
               variant="contained"
               disabled={isLoading}
               className="mt-4 mb-3 py-3"
-              sx={{ 
+              sx={{
                 backgroundColor: 'var(--button-bg)',
                 color: 'var(--button-text)',
                 '&:hover': {
@@ -228,9 +224,8 @@ export default function LoginForm() {
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
-            
             <Box className="text-center mt-4">
-              <Button 
+              <Button
                 onClick={() => setOpenResetModal(true)}
                 variant="text"
                 className="text-sm"
@@ -242,8 +237,7 @@ export default function LoginForm() {
           </form>
         </Paper>
       </Box>
-      
-      <ResetPasswordModal 
+      <ResetPasswordModal
         open={openResetModal}
         onClose={() => setOpenResetModal(false)}
       />
