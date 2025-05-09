@@ -2,6 +2,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Layout from './components/Layout';
+import { useRouter } from 'next/navigation';
+import { checkAuth } from './lib/supabaseClient';
+
 
 interface Equipment {
   id: string;
@@ -21,6 +24,8 @@ interface Equipment {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -30,13 +35,23 @@ export default function Home() {
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Adicione estes novos estados para o modal de confirmação
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [equipmentToDelete, setEquipmentToDelete] = useState<{id: string, type?: string} | null>(null);
 
   useEffect(() => {
-    // Usar uma função para carregar os dados do localStorage apenas uma vez
+    async function verifyAuth() {
+      const session = await checkAuth();
+      if (!session) {
+        router.replace('/login');
+        setIsAuthenticated(false);
+      } else {
+        setIsAuthenticated(true);
+      }
+    }
+    verifyAuth();
+  }, [router]);
+
+  useEffect(() => {
     const loadEquipments = () => {
       try {
         const storedEquipments = localStorage.getItem('equipments');
@@ -48,11 +63,9 @@ export default function Home() {
       }
       return [];
     };
-    
     setEquipments(loadEquipments());
   }, []);
 
-  // Memoizar a função getCalibrationStatus para evitar recálculos desnecessários
   const getCalibrationStatus = useCallback((nextCalibration: string) => {
     const today = new Date();
     const nextDate = new Date(nextCalibration);

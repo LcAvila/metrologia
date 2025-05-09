@@ -2,6 +2,7 @@
 import { useState, memo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../lib/supabaseClient';
 
 interface SidebarProps {
   title: string;
@@ -86,10 +87,10 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
   return (
     <>
       {/* Overlay com efeito de fade */}
-      <div 
+      <div
         className={`fixed inset-0 bg-black transition-opacity duration-300 md:hidden ${sidebarOpen ? 'opacity-50 z-40' : 'opacity-0 pointer-events-none'}`}
         onClick={closeSidebar}
-      />
+      ></div>
 
       {/* Sidebar com animações melhoradas e persistência */}
       <div 
@@ -171,9 +172,6 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
               </li>
             ))}
           </ul>
-          
-          {/* Theme Toggle Switch */}
-          {/* Theme Toggle Switch */}
           <div className="p-2 mt-auto border-t border-opacity-20 border-[var(--sidebar-text)] w-full">
             <div 
               className="flex items-center justify-center w-full p-2 rounded-lg transition-all duration-200 cursor-pointer"
@@ -235,6 +233,17 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
               )}
             </div>
           </div>
+          <button
+            className={`flex items-center justify-center w-full mt-4 p-2 rounded-lg transition-colors duration-200 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 ${isExpanded ? 'justify-start' : 'justify-center'}`}
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/login';
+            }}
+            title="Sair"
+          >
+            <i className="bx bx-log-out text-xl" />
+            {isExpanded && <span className="ml-2 font-medium">Sair</span>}
+          </button>
         </nav>
       </div>
 
