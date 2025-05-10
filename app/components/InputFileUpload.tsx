@@ -16,30 +16,47 @@ const VisuallyHiddenInput = styled('input')({
 });
 
 interface InputFileUploadProps {
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   name: string;
   accept?: string;
   multiple?: boolean;
+  label?: string;
+  icon?: React.ReactElement;
+  fileName?: string;
+  currentFileUrl?: string;
 }
 
-export default function InputFileUpload({ onChange, name, accept, multiple = false }: InputFileUploadProps) {
+export default function InputFileUpload({ onChange, onFileChange, name, accept, multiple = false, label = "Upload file", icon, fileName, currentFileUrl }: InputFileUploadProps) {
   return (
-    <Button
-      component="label"
-      role={undefined}
-      variant="contained"
-      tabIndex={-1}
-      startIcon={<CloudUploadIcon />}
-      sx={{ textTransform: 'none' }} // Para manter o texto como "Upload file"
-    >
-      Upload file
-      <VisuallyHiddenInput
-        type="file"
-        name={name}
-        onChange={onChange}
-        accept={accept}
-        multiple={multiple}
-      />
-    </Button>
+    <>
+      <Button
+        component="label"
+        role={undefined}
+        variant="contained"
+        tabIndex={-1}
+        startIcon={icon ?? <CloudUploadIcon />}
+        sx={{ textTransform: 'none' }} // Para manter o texto como "Upload file"
+      >
+        {label}
+        <VisuallyHiddenInput
+          type="file"
+          name={name}
+          onChange={onFileChange ?? onChange}
+          accept={accept}
+          multiple={multiple}
+        />
+      </Button>
+      {fileName && (
+        <div style={{ marginTop: 8, fontSize: 12, color: '#555' }}>{fileName}</div>
+      )}
+      {currentFileUrl && (
+        <div style={{ marginTop: 4 }}>
+          <a href={currentFileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2', fontSize: 12 }}>
+            Visualizar arquivo atual
+          </a>
+        </div>
+      )}
+    </>
   );
 }

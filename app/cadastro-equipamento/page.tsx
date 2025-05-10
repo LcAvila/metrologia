@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
-import InputFileUpload from '../components/InputFileUpload'; 
+import InputFileUpload from '../components/InputFileUpload';
 import { NotificationProvider, useNotification } from '../context/NotificationContext';
 import DatePicker from '../components/DatePicker';
-import { FaCalendarAlt, FaTools, FaBuilding, FaIdCard, FaRuler, FaMapMarkerAlt, FaIndustry, FaBarcode, FaFileAlt, FaFileUpload } from 'react-icons/fa';
+import { FaCalendarAlt, FaTools, FaBuilding, FaIdCard, FaRuler, FaMapMarkerAlt, FaIndustry, FaBarcode, FaFileAlt, FaFileUpload, FaToggleOn, FaCube, FaPlusCircle, FaEdit } from 'react-icons/fa';
 
 interface Equipment {
   id: string; 
@@ -84,7 +84,7 @@ function CadastroEquipamentoContent() {
     id: '',
     type: '',
     sector: '',
-    status: '',
+    status: 'available', // Default status
     lastCalibration: '',
     nextCalibration: '',
     standardLocation: '',
@@ -112,7 +112,7 @@ function CadastroEquipamentoContent() {
         id: parsedEquipment.id ?? '',
         type: parsedEquipment.type ?? '',
         sector: parsedEquipment.sector ?? '',
-        status: parsedEquipment.status ?? '',
+        status: parsedEquipment.status ?? 'available',
         lastCalibration: parsedEquipment.lastCalibration ?? '',
         nextCalibration: parsedEquipment.nextCalibration ?? '',
         standardLocation: parsedEquipment.standardLocation ?? '',
@@ -276,239 +276,286 @@ function CadastroEquipamentoContent() {
     }, 1000); // Pequeno atraso para que o usuário veja a notificação
   };
 
-  return (
-    <Layout title="Cadastro de Equipamento">
-      <div className="bg-[var(--card-bg)] p-2 sm:p-3 md:p-5 rounded-lg shadow transition-colors duration-300">
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 md:space-y-5">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-[var(--foreground)] border-b border-[var(--border)] pb-2 mb-4">Informações Básicas</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-              <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                <label htmlFor="type" className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1">Tipo*</label>
-                <select 
-                  id="type" 
-                  name="type" 
-                  value={equipment.type}
-                  onChange={handleChange}
-                  className="w-full p-2 sm:p-2.5 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                  required
-                >
-                    <option value="">Selecione um tipo de equipamento</option>
-                    <optgroup label="📏 Instrumentos de Medição Linear">
-                      <option value="Paquímetro">Paquímetro</option>
-                      <option value="Micrômetro Externo">Micrômetro Externo</option>
-                      <option value="Micrômetro Interno">Micrômetro Interno</option>
-                      <option value="Micrômetro de Profundidade">Micrômetro de Profundidade</option>
-                      <option value="Régua Milimetrada">Régua Milimetrada</option>
-                      <option value="Trena Metálica">Trena Metálica</option>
-                      <option value="Calibrador de Folga">Calibrador de Folga</option>
-                      <option value="Calibrador de Rosca">Calibrador de Rosca</option>
-                      <option value="Calibrador Tipo Anel">Calibrador Tipo Anel</option>
-                      <option value="Calibrador Tipo Tampão">Calibrador Tipo Tampão</option>
-                      <option value="Pino Padrão">Pino Padrão</option>
-                    </optgroup>
-                    <optgroup label="⚖️ Instrumentos de Massa e Peso">
-                      <option value="Balança Analítica">Balança Analítica</option>
-                      <option value="Balança de Precisão">Balança de Precisão</option>
-                      <option value="Balança Industrial">Balança Industrial</option>
-                      <option value="Peso Padrão">Peso Padrão</option>
-                    </optgroup>
-                    <optgroup label="🕓 Instrumentos de Tempo e Velocidade">
-                      <option value="Cronômetro">Cronômetro</option>
-                      <option value="Tacômetro">Tacômetro</option>
-                      <option value="Estroboscópio">Estroboscópio</option>
-                    </optgroup>
-                    <optgroup label="🌡️ Instrumentos de Temperatura">
-                      <option value="Termômetro Digital">Termômetro Digital</option>
-                      <option value="Termômetro Infravermelho">Termômetro Infravermelho</option>
-                      <option value="Termômetro de Mercúrio">Termômetro de Mercúrio</option>
-                      <option value="Termopar">Termopar</option>
-                      <option value="Pirômetro">Pirômetro</option>
-                      <option value="Sensor RTD">Sensor RTD</option>
-                      <option value="Sensor PT100">Sensor PT100</option>
-                    </optgroup>
-                    <optgroup label="🌬️ Instrumentos de Pressão e Vazão">
-                      <option value="Manômetro">Manômetro</option>
-                      <option value="Vacuômetro">Vacuômetro</option>
-                      <option value="Transdutor de Pressão">Transdutor de Pressão</option>
-                      <option value="Medidor de Vazão">Medidor de Vazão</option>
-                      <option value="Medidor de Coluna de Líquido">Medidor de Coluna de Líquido</option>
-                    </optgroup>
-                    <optgroup label="🔍 Instrumentos Ópticos e de Inspeção">
-                      <option value="Projetor de Perfil">Projetor de Perfil</option>
-                      <option value="Microscópio de Medição">Microscópio de Medição</option>
-                      <option value="Câmera de Inspeção">Câmera de Inspeção</option>
-                      <option value="Rugosímetro">Rugosímetro</option>
-                      <option value="Durômetro">Durômetro</option>
-                      <option value="Refratômetro">Refratômetro</option>
-                    </optgroup>
-                    <optgroup label="⚙️ Outros Equipamentos">
-                      <option value="Torquímetro">Torquímetro</option>
-                      <option value="Medidor de Dureza Rockwell">Medidor de Dureza Rockwell</option>
-                      <option value="Medidor de Dureza Brinell">Medidor de Dureza Brinell</option>
-                      <option value="Medidor de Dureza Vickers">Medidor de Dureza Vickers</option>
-                      <option value="Medidor de Espessura Ultrassônico">Medidor de Espessura Ultrassônico</option>
-                      <option value="Medidor de Espessura de Pintura">Medidor de Espessura de Pintura</option>
-                      <option value="Medidor de pH">Medidor de pH</option>
-                      <option value="Data Logger de Temperatura">Data Logger de Temperatura</option>
-                      <option value="Data Logger de Umidade">Data Logger de Umidade</option>
-                      <option value="Colorímetro">Colorímetro</option>
-                      <option value="Espectrofotômetro">Espectrofotômetro</option>
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="id" className="block text-sm font-medium text-[var(--foreground)] mb-1">ID*</label>
-                  <input 
-                    type="text" 
-                    id="id" 
-                    name="id" 
-                    value={equipment.id}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                    required
-                  />
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="sector" className="block text-sm font-medium text-[var(--foreground)] mb-1">Setor*</label>
-                  <select 
-                    id="sector" 
-                    name="sector" 
-                    value={equipment.sector}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                    required
-                  >
-                    <option value="">Selecione um setor</option>
-                    <option value="Injetoras">Injetoras</option>
-                    <option value="Ferramentaria">Ferramentaria</option>
-                    <option value="Controle da Qualidade">Controle da Qualidade</option>
-                    <option value="Point Matic">Point Matic</option>
-                    <option value="M1">Montagem 1 (M1)</option>
-                    <option value="ALM1">Almoxarifado 1 (ALM 1)</option>
-                    <option value="ALM2">Almoxarifado 2 (ALM 2)</option>
-                    <option value="DPA">Depósito de Produtos Acabados (DPA)</option>
-                    <option value="Manutencao">Manutenção</option>
-                  </select>
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="status" className="block text-sm font-medium text-[var(--foreground)] mb-1">Status*</label>
-                  <select 
-                    id="status" 
-                    name="status" 
-                    value={equipment.status}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                    required
-                  >
-                    <option value="">Selecione um status</option>
-                    <option value="available">Disponível</option>
-                    <option value="maintenance">Em Manutenção</option>
-                    <option value="calibration">Em Calibração</option>
-                    <option value="discarded">Descartado</option>
-                  </select>
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-  <label htmlFor="lastCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Última Calibração*</label>
-  <input 
-    type="date" 
-    id="lastCalibration" 
-    name="lastCalibration" 
-    value={equipment.lastCalibration}
-    onChange={handleChange}
-    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-    required
-  />
-</div>
-<div className="col-span-1 sm:col-span-2 md:col-span-1">
-  <label htmlFor="nextCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Próxima Calibração*</label>
-  <input 
-    type="date" 
-    id="nextCalibration" 
-    name="nextCalibration" 
-    value={equipment.nextCalibration}
-    onChange={handleChange}
-    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-    required
-  />
-</div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="model" className="block text-sm font-medium text-[var(--foreground)] mb-1">Modelo do Equipamento</label>
-                  <input 
-                    type="text" 
-                    id="model" 
-                    name="model" 
-                    value={equipment.model}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                  />
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="serialNumber" className="block text-sm font-medium text-[var(--foreground)] mb-1">Número de Série</label>
-                  <input 
-                    type="text" 
-                    id="serialNumber" 
-                    name="serialNumber" 
-                    value={equipment.serialNumber}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                  />
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="manufacturer" className="block text-sm font-medium text-[var(--foreground)] mb-1">Fabricante</label>
-                  <input 
-                    type="text" 
-                    id="manufacturer" 
-                    name="manufacturer" 
-                    value={equipment.manufacturer}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                  />
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="measurementRange" className="block text-sm font-medium text-[var(--foreground)] mb-1">Faixa de Medida</label>
-                  <input 
-                    type="text" 
-                    id="measurementRange" 
-                    name="measurementRange" 
-                    value={equipment.measurementRange}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                    placeholder="Ex: 0-150mm, 0-10kg"
-                  />
-                </div>
-                  <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                    <label htmlFor="certificateFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificado</label>
-                      <InputFileUpload onChange={handleFileChange} name="certificateFile" accept=".pdf,.jpg,.jpeg,.png" /> 
-                  </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="dataRecordFile" className="block text-sm font-medium text-[var(--foreground)] mb-1">Registro de Dados</label>
-                  <InputFileUpload onChange={handleFileChange} name="dataRecordFile" accept=".pdf,.csv,.xlsx,.xls,.txt" />
-                </div>
-              </div>
+const sectionTitleClass = "text-lg font-bold text-[var(--foreground)] mt-3 mb-3 border-b border-[var(--input-border)] pb-2 col-span-1 sm:col-span-2 lg:col-span-3 first:mt-0";
+
+return (
+  <Layout title={equipment.id ? "Editar Equipamento" : "Cadastro de Equipamento"}>
+    <div className="bg-[var(--card-bg)] p-4 md:p-8 rounded-lg shadow-xl transition-colors duration-300 max-w-full mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+
+          {/* Seção: Informações Básicas */}
+          <h3 className={sectionTitleClass}>
+            Informações Básicas
+          </h3>
+
+            <div>
+              <label htmlFor="id" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaIdCard /></span>
+                ID do Equipamento {equipment.id ? null : <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <input
+                type="text"
+                name="id"
+                id="id"
+                value={equipment.id}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                required
+                readOnly={!!equipment.id && !localStorage.getItem('editingEquipment')} // ReadOnly if editing and ID generated
+                placeholder="Ex: PAQ-001"
+              />
             </div>
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
-                <Link 
-                  href="/" 
-                  className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 text-center"
-                >
-                  Cancelar
-                </Link>
-                <button 
-                  type="submit" 
-                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-md hover:bg-[var(--primary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 text-center w-full sm:w-auto"
-                >
-                  Salvar
-                </button>
-              </div>
-            </form>
+
+            <div>
+              <label htmlFor="type" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaTools /></span>
+                Tipo de Equipamento {equipment.id ? null : <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <select
+                name="type"
+                id="type"
+                value={equipment.type}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                required
+              >
+                <option value="">Selecione o tipo</option>
+                {Object.keys(equipmentPrefixes).map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="sector" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaBuilding /></span>
+                Setor {equipment.id ? null : <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <select
+                name="sector"
+                id="sector"
+                value={equipment.sector}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                required
+              >
+                <option value="">Selecione o setor</option>
+                <option value="Injetoras">Injetoras</option>
+                <option value="Ferramentaria">Ferramentaria</option>
+                <option value="Controle da Qualidade">Controle da Qualidade</option>
+                <option value="Point Matic">Point Matic</option>
+                <option value="Montagem 1 (M1)">Montagem 1 (M1)</option>
+                <option value="Almoxarifado 1 (ALM 1)">Almoxarifado 1 (ALM 1)</option>
+                <option value="Almoxarifado 2 (ALM 2)">Almoxarifado 2 (ALM 2)</option>
+                <option value="Depósito de Produtos Acabados (DPA)">Depósito de Produtos Acabados (DPA)</option>
+                <option value="Manutenção">Manutenção</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="status" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaToggleOn /></span>
+                Status {equipment.id ? null : <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <select
+                name="status"
+                id="status"
+                value={equipment.status}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                required
+              >
+                <option value="available">Disponível</option>
+                <option value="maintenance">Em Manutenção</option>
+                <option value="calibration">Em Calibração</option>
+                <option value="discarded">Descartado</option>
+              </select>
+            </div>
+
+            {/* Seção: Datas de Calibração */}
+            <h3 className={sectionTitleClass}>
+              Datas de Calibração
+            </h3>
+
+            <div>
+              <DatePicker
+                id="lastCalibration"
+                label="Última Calibração"
+                value={equipment.lastCalibration}
+                onChange={(date) => setEquipment(prev => ({ ...prev, lastCalibration: date }))}
+                icon={<FaCalendarAlt />}
+                required
+              />
+            </div>
+
+            <div>
+              <DatePicker
+                id="nextCalibration"
+                label="Próxima Calibração"
+                value={equipment.nextCalibration}
+                onChange={(date) => setEquipment(prev => ({ ...prev, nextCalibration: date }))}
+                icon={<FaCalendarAlt />}
+                required
+              />
+            </div>
+
+            {/* Seção: Localização */}
+            <h3 className={sectionTitleClass}>
+              Localização
+            </h3>
+            
+            <div>
+              <label htmlFor="standardLocation" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaMapMarkerAlt /></span>
+                Local Padrão
+              </label>
+              <input
+                type="text"
+                name="standardLocation"
+                id="standardLocation"
+                value={equipment.standardLocation}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                placeholder="Ex: Bancada 3, Armário 2"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="currentLocation" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaMapMarkerAlt /></span>
+                Localização Atual
+              </label>
+              <input
+                type="text"
+                name="currentLocation"
+                id="currentLocation"
+                value={equipment.currentLocation}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                placeholder="Ex: Em uso na Injetora 5"
+              />
+            </div>
+
+            {/* Seção: Detalhes Técnicos */}
+            <h3 className={sectionTitleClass}>
+              Detalhes Técnicos
+            </h3>
+
+            <div>
+              <label htmlFor="measurementRange" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaRuler /></span>
+                Faixa de Medida
+              </label>
+              <input
+                type="text"
+                name="measurementRange"
+                id="measurementRange"
+                value={equipment.measurementRange}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                placeholder="Ex: 0-150mm, 0-25kg"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="model" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaCube /></span>
+                Modelo
+              </label>
+              <input
+                type="text"
+                name="model"
+                id="model"
+                value={equipment.model}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                placeholder="Ex: Mitutoyo 500-196-30B"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="serialNumber" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaBarcode /></span>
+                Número de Série
+              </label>
+              <input
+                type="text"
+                name="serialNumber"
+                id="serialNumber"
+                value={equipment.serialNumber}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                placeholder="Ex: SN123456789"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="manufacturer" className="block text-base font-semibold text-[var(--foreground)] mb-2 flex items-center">
+                <span className="mr-1.5 text-[var(--primary)]"><FaIndustry /></span>
+                Fabricante
+              </label>
+              <input
+                type="text"
+                name="manufacturer"
+                id="manufacturer"
+                value={equipment.manufacturer}
+                onChange={handleChange}
+                className="w-full px-2 py-0 border border-[var(--input-border)] rounded bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-colors duration-200 text-sm"
+                placeholder="Ex: Mitutoyo, Digimess"
+              />
+            </div>
+
+            {/* Seção: Documentos */}
+            <h3 className={sectionTitleClass}>
+              Documentos
+            </h3>
+
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col sm:flex-row gap-2 items-start"> {/* File inputs can span full width on medium screens if desired, or stay in one column */}
+              <InputFileUpload
+                label="Certificado do Equipamento"
+                icon={<FaFileAlt />}
+                fileName={equipment.certificateFile}
+                onFileChange={handleFileChange}
+                name="certificateFile" // This name will be used in handleFileChange
+                accept=".pdf,.doc,.docx,.jpg,.png"
+                // Passar a URL pública se o arquivo já existir e não for um blob local
+                currentFileUrl={equipment.certificateFile && !equipment.certificateFile.startsWith('blob:') && !equipment.certificateFileObject ? `/api/download-file?filePath=${encodeURIComponent(equipment.certificateFile)}` : undefined}
+              />
+            </div>
+
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col sm:flex-row gap-2 items-start">
+              <InputFileUpload
+                label="Registro de Dados"
+                icon={<FaFileUpload />}
+                fileName={equipment.dataRecordFile}
+                onFileChange={handleFileChange}
+                name="dataRecordFile" // This name will be used in handleFileChange
+                accept=".pdf,.csv,.xls,.xlsx,.txt"
+                currentFileUrl={equipment.dataRecordFile && !equipment.dataRecordFile.startsWith('blob:') && !equipment.dataRecordFileObject ? `/api/download-file?filePath=${encodeURIComponent(equipment.dataRecordFile)}` : undefined}
+              />
+            </div>
           </div>
-        </Layout>
+
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex justify-end pt-2">
+            <button
+              type="submit"
+              className="w-full sm:w-auto bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-1.5 px-4 rounded shadow-md transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-50 flex items-center justify-center text-xs"
+            >
+              <span className="mr-2">
+                {equipment.id && localStorage.getItem('editingEquipment') ? <FaEdit /> : <FaPlusCircle />}
+              </span>
+              {equipment.id && localStorage.getItem('editingEquipment') ? 'Atualizar Equipamento' : 'Cadastrar Equipamento'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Layout>
   );
 }
 
-// Componente exportado que fornece o contexto de notificação
-export default function CadastroEquipamento() {
+// Componente principal da página que envolve o conteúdo com o NotificationProvider
+export default function CadastroEquipamentoPage() {
   return (
     <NotificationProvider>
       <CadastroEquipamentoContent />

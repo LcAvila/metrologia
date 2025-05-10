@@ -3,7 +3,7 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import ReactDatePicker from 'react-datepicker';
 import { registerLocale, setDefaultLocale } from "react-datepicker";
-import ptBR from 'date-fns/locale/pt-BR';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { FaCalendarAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import "react-datepicker/dist/react-datepicker.css";
 import "../components/datepicker.css"; // Update this import path
@@ -182,7 +182,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           shouldCloseOnSelect={true}
           inline={false}
           wrapperClassName="w-full"
-          monthClassName="!m-1"
+
           weekDayClassName={() => "!text-xs !py-1 !h-5 !w-6 !m-[0.1rem]"}
         />
       </div>
