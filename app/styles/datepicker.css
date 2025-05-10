@@ -1,0 +1,121 @@
+/* Estilos personalizados para o DatePicker */
+.react-datepicker {
+  font-family: inherit;
+  border-radius: 0.375rem;
+  border: 1px solid var(--card-border);
+  background-color: var(--card-bg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: scaleIn 0.2s ease-out;
+}
+
+.react-datepicker__header {
+  background-color: var(--card-header-bg);
+  border-bottom: 1px solid var(--card-border);
+  padding-top: 0.5rem;
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+}
+
+/* Reduzir o tamanho do dropdown */
+.react-datepicker {
+  font-size: 0.8rem; /* Reduzir o tamanho da fonte */
+  width: 220px; /* Definir uma largura menor */
+}
+
+.react-datepicker__day {
+  margin: 0.1rem; /* Reduzir as margens */
+  width: 1.5rem; /* Reduzir o tamanho dos dias */
+  height: 1.5rem; /* Reduzir a altura dos dias */
+  line-height: 1.5rem; /* Ajustar a linha para centralizar o texto */
+}
+
+.react-datepicker__day-name {
+  margin: 0.1rem;
+  width: 1.5rem;
+}
+
+.react-datepicker__day {
+  margin: 0.2rem;
+  border-radius: 9999px;
+  width: 1.7rem;
+  height: 1.7rem;
+  line-height: 1.7rem;
+  transition: all 0.2s ease;
+}
+
+.react-datepicker__day:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.react-datepicker__day--selected {
+  background-color: var(--primary) !important;
+  color: white !important;
+  font-weight: 500;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.react-datepicker__day--today {
+  font-weight: 600;
+  position: relative;
+}
+
+.react-datepicker__day--today::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+.react-datepicker__month-container {
+  float: left;
+  animation: fadeIn 0.3s ease;
+}
+
+.react-datepicker__day-name {
+  margin: 0.2rem;
+  width: 1.7rem;
+  color: var(--foreground-secondary);
+}
+
+.react-datepicker__triangle {
+  display: none;
+}
+
+.react-datepicker__current-month {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.react-datepicker__navigation {
+  top: 0.5rem;
+}
+
+.react-datepicker-popper {
+  z-index: 40;
+}
+
+.react-datepicker__input-container input {
+  cursor: pointer;
+}
+
+/* Animação para o dia selecionado */
+.react-datepicker__day--selected:not(:hover) {
+  animation: pulseGlow 1.5s infinite;
+}
+
+/* Animação para mudança de mês */
+.react-datepicker__month-container {
+  animation: fadeIn 0.3s ease-out;
+}

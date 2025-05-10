@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from 'next/font/google';
 import "./globals.css";
+import "./components/datepicker.css";
 import { ThemeProvider } from "./context/ThemeContext";
 
 const inter = Inter({

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { generateCertificateNumber, incrementCertificateNumber } from '../services/certificateService';
 import { useTheme } from '../context/ThemeContext';
 import { FaClipboardCheck, FaCalendarAlt, FaTools, FaBuilding, FaIdCard, FaTrash, FaEdit, FaCheck, FaFilter } from 'react-icons/fa';
+import DatePicker from '../components/DatePicker';
 
 // Interface para o certificado
 interface Certificate {
@@ -80,6 +81,41 @@ export default function ControleEmissaoCertificado() {
   const [refreshCertNumber, setRefreshCertNumber] = useState(0); // Estado para forçar atualização do número
   const handleCertificateNumberChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, certificateNumber: value }));
+  }, []);
+
+  // Função para lidar com a mudança de equipamento
+  const handleEquipmentChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedType = e.target.value;
+    
+    // Carregar equipamentos do localStorage
+    let equipmentList: any[] = [];
+    const storedEquipments = localStorage.getItem('equipments');
+    if (storedEquipments) {
+      equipmentList = JSON.parse(storedEquipments);
+    }
+    
+    // Encontrar equipamentos do tipo selecionado
+    const matchingEquipments = equipmentList.filter(eq => eq.type === selectedType);
+    
+    if (matchingEquipments.length > 0) {
+      // Usar o primeiro equipamento encontrado (ou você pode mostrar uma lista para seleção)
+      const selectedEquipment = matchingEquipments[0];
+      
+      setFormData(prev => ({
+        ...prev,
+        equipment: selectedType,
+        identification: selectedEquipment.id, // Usar o ID do equipamento
+        sector: selectedEquipment.sector || ''
+      }));
+    } else {
+      // Se não encontrar equipamentos do tipo selecionado
+      setFormData(prev => ({
+        ...prev,
+        equipment: selectedType,
+        identification: '',
+        sector: ''
+      }));
+    }
   }, []);
 
   const [formData, setFormData] = useState<Certificate>({
@@ -294,12 +330,12 @@ export default function ControleEmissaoCertificado() {
     
     // Se for o campo de equipamento, preencher automaticamente o ID e o setor
     if (id === 'equipment') {
-      const selectedEquipment = equipmentList.find(eq => eq.id === value);
+      const selectedEquipment = equipmentList.find(eq => eq.type === value);
       if (selectedEquipment) {
         setFormData(prev => ({
           ...prev,
           equipment: value,
-          identification: value, // O id é o próprio nome do equipamento
+          identification: selectedEquipment.id, // Usar o ID do equipamento, não o nome
           sector: selectedEquipment.sector
         }));
       } else {
@@ -393,29 +429,25 @@ export default function ControleEmissaoCertificado() {
               
               {/* Data de Recebimento */}
               <div className="col-span-2 md:col-span-1">
-                <label htmlFor="receiveDate" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
-                  <FaCalendarAlt className="mr-1 text-[var(--primary)] text-xs" /> Recebimento
-                </label>
-                <input 
-                  type="date" 
-                  id="receiveDate" 
+                <DatePicker
+                  id="receiveDate"
                   value={formData.receiveDate}
-                  onChange={handleChange}
-                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
+                  onChange={(date) => setFormData(prev => ({ ...prev, receiveDate: date }))}
+                  label="Recebimento"
+                  placeholder="Selecione a data"
+                  icon={<FaCalendarAlt />}
                 />
               </div>
               
               {/* Data de Emissão */}
               <div className="col-span-2 md:col-span-1">
-                <label htmlFor="issueDate" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
-                  <FaCalendarAlt className="mr-1 text-[var(--primary)] text-xs" /> Emissão
-                </label>
-                <input 
-                  type="date" 
-                  id="issueDate" 
+                <DatePicker
+                  id="issueDate"
                   value={formData.issueDate}
-                  onChange={handleChange}
-                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
+                  onChange={(date) => setFormData(prev => ({ ...prev, issueDate: date }))}
+                  label="Emissão"
+                  placeholder="Selecione a data"
+                  icon={<FaCalendarAlt />}
                 />
               </div>
               

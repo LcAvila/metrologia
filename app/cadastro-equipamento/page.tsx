@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
 import InputFileUpload from '../components/InputFileUpload'; 
 import { NotificationProvider, useNotification } from '../context/NotificationContext';
+import DatePicker from '../components/DatePicker';
+import { FaCalendarAlt, FaTools, FaBuilding, FaIdCard, FaRuler, FaMapMarkerAlt, FaIndustry, FaBarcode, FaFileAlt, FaFileUpload } from 'react-icons/fa';
 
 interface Equipment {
   id: string; 
@@ -78,8 +80,6 @@ const equipmentPrefixes: Record<string, string> = {
 
 // Componente interno que usa o hook useNotification
 function CadastroEquipamentoContent() {
-  const router = useRouter();
-  const { showNotification } = useNotification();
   const [equipment, setEquipment] = useState<Equipment>({
     id: '',
     type: '',
@@ -96,7 +96,9 @@ function CadastroEquipamentoContent() {
     certificateFile: '',
     dataRecordFile: ''
   });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const router = useRouter();
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     // Verificar se há um equipamento para edição no localStorage
@@ -129,12 +131,48 @@ function CadastroEquipamentoContent() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setEquipment(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'type') {
+      const prefix = equipmentPrefixes[value] || '';
+      if (prefix) {
+        let equipments: Equipment[] = [];
+        const storedEquipments = localStorage.getItem('equipments');
+        if (storedEquipments) {
+          equipments = JSON.parse(storedEquipments);
+        }
+        const sameTypeEquipments = equipments.filter(eq => eq.id.startsWith(prefix));
+        let nextNumber = 1;
+        if (sameTypeEquipments.length > 0) {
+          const existingNumbers = sameTypeEquipments
+            .map(eq => {
+              const match = eq.id.match(new RegExp(`^${prefix}-(\\d{3})$`));
+              return match ? parseInt(match[1], 10) : 0;
+            })
+            .filter(num => !isNaN(num));
+          if (existingNumbers.length > 0) {
+            nextNumber = Math.max(...existingNumbers) + 1;
+          }
+        }
+        const formattedNumber = nextNumber.toString().padStart(3, '0');
+        setEquipment(prev => ({
+          ...prev,
+          type: value,
+          id: `${prefix}-${formattedNumber}`
+        }));
+      } else {
+        setEquipment(prev => ({
+          ...prev,
+          type: value,
+          id: ''
+        }));
+      }
+    } else {
+      setEquipment(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
-  
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -371,29 +409,29 @@ function CadastroEquipamentoContent() {
                   </select>
                 </div>
                 <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="lastCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Última Calibração*</label>
-                  <input 
-                    type="date" 
-                    id="lastCalibration" 
-                    name="lastCalibration" 
-                    value={equipment.lastCalibration}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                    required
-                  />
-                </div>
-                <div className="col-span-1 sm:col-span-2 md:col-span-1">
-                  <label htmlFor="nextCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Próxima Calibração*</label>
-                  <input 
-                    type="date" 
-                    id="nextCalibration" 
-                    name="nextCalibration" 
-                    value={equipment.nextCalibration}
-                    onChange={handleChange}
-                    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
-                    required
-                  />
-                </div>
+  <label htmlFor="lastCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Última Calibração*</label>
+  <input 
+    type="date" 
+    id="lastCalibration" 
+    name="lastCalibration" 
+    value={equipment.lastCalibration}
+    onChange={handleChange}
+    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+    required
+  />
+</div>
+<div className="col-span-1 sm:col-span-2 md:col-span-1">
+  <label htmlFor="nextCalibration" className="block text-sm font-medium text-[var(--foreground)] mb-1">Próxima Calibração*</label>
+  <input 
+    type="date" 
+    id="nextCalibration" 
+    name="nextCalibration" 
+    value={equipment.nextCalibration}
+    onChange={handleChange}
+    className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded bg-[var(--input-bg)] text-[var(--input-text)] border-[var(--input-border)] focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300"
+    required
+  />
+</div>
                 <div className="col-span-1 sm:col-span-2 md:col-span-1">
                   <label htmlFor="model" className="block text-sm font-medium text-[var(--foreground)] mb-1">Modelo do Equipamento</label>
                   <input 
@@ -477,3 +515,7 @@ export default function CadastroEquipamento() {
     </NotificationProvider>
   );
 }
+
+
+
+
