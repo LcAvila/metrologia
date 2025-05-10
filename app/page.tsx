@@ -37,6 +37,8 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [equipmentToDelete, setEquipmentToDelete] = useState<{id: string, type?: string} | null>(null);
+  const [showCertificatePreview, setShowCertificatePreview] = useState(false);
+  const [showDataRecordPreview, setShowDataRecordPreview] = useState(false);
 
   useEffect(() => {
     async function verifyAuth() {
@@ -78,9 +80,12 @@ export default function Home() {
   }, []);
   
   // Função para abrir o modal com os detalhes do equipamento
-  const openModal = useCallback((equipment: Equipment) => {
+  const openDetailsModal = useCallback((equipment: Equipment) => {
     setSelectedEquipment(equipment);
     setIsModalOpen(true);
+    // Resetar estados de visualização de PDF quando abrir o modal
+    setShowCertificatePreview(false);
+    setShowDataRecordPreview(false);
   }, []);
 
   // Função para formatar data - memoizada para evitar recálculos
@@ -262,7 +267,7 @@ export default function Home() {
                   {paginatedEquipments.length > 0 ? (
                     paginatedEquipments.map((equipment) => (
                       <tr key={equipment.id} className="bg-[var(--table-row-bg)] border-b border-[var(--border)] hover:bg-[var(--table-row-hover-bg)] transition-colors duration-150 cursor-pointer"
-                        onClick={() => openModal(equipment)}
+                        onClick={() => openDetailsModal(equipment)}
                       >
                         <td className="px-4 py-2 text-xs sm:text-sm text-[var(--foreground)] whitespace-nowrap">
                           {equipment.id}
@@ -364,97 +369,244 @@ export default function Home() {
           )}
                   {/* Modal de Detalhes do Equipamento */}
           {isModalOpen && selectedEquipment && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-[var(--card-bg)] rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-[var(--foreground)]">Detalhes do Equipamento</h2>
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm transition-all duration-300 ease-in-out">
+              <div 
+                className="bg-[var(--card-bg)] rounded-xl shadow-2xl p-0 max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-500 ease-out animate-modalFadeIn"
+                style={{
+                  boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px, rgba(0, 0, 0, 0.05) 0px 5px 20px'
+                }}
+              >
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-5 text-white flex justify-between items-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                      <i className="bx bx-cube-alt text-2xl"></i>
+                    </div>
+                    <h2 className="text-2xl font-bold">Detalhes do Equipamento</h2>
+                  </div>
                   <button 
                     onClick={() => setIsModalOpen(false)}
-                    className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-300"
+                    className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-all duration-300 transform hover:rotate-90 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                   >
                     <i className="bx bx-x text-2xl"></i>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 text-[var(--foreground)]">Informações Básicas</h3>
-                    <div className="space-y-3">
-                      <p><span className="font-medium">ID:</span> {selectedEquipment.id}</p>
-                      <p><span className="font-medium">Tipo:</span> {selectedEquipment.type}</p>
-                      <p><span className="font-medium">Setor:</span> {selectedEquipment.sector}</p>
-                      <p><span className="font-medium">Status:</span> {getStatusText(selectedEquipment.status)}</p>
-                      <p><span className="font-medium">Modelo:</span> {selectedEquipment.model || 'Não informado'}</p>
-                      <p><span className="font-medium">Número de Série:</span> {selectedEquipment.serialNumber || 'Não informado'}</p>
-                      <p><span className="font-medium">Fabricante:</span> {selectedEquipment.manufacturer || 'Não informado'}</p>
-                      <p><span className="font-medium">Faixa de Medida:</span> {selectedEquipment.measurementRange || 'Não informado'}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 text-[var(--foreground)]">Calibração e Localização</h3>
-                    <div className="space-y-3">
-                      <p><span className="font-medium">Última Calibração:</span> {formatDate(selectedEquipment.lastCalibration)}</p>
-                      <p><span className="font-medium">Próxima Calibração:</span> {formatDate(selectedEquipment.nextCalibration)}</p>
-                      <p><span className="font-medium">Localização Padrão:</span> {selectedEquipment.standardLocation || 'Não informado'}</p>
-                      <p><span className="font-medium">Localização Atual:</span> {selectedEquipment.currentLocation || 'Não informado'}</p>
-                    </div>
-
-                    <h3 className="text-lg font-semibold my-4 text-[var(--foreground)]">Documentos</h3>
-                    <div className="space-y-3">
-                      {selectedEquipment.certificateFile && (
-                        <div className="flex items-center space-x-2">
-                          <i className="bx bx-file text-xl"></i>
-                          <a 
-                            href={`/api/view-pdf?file=${selectedEquipment.certificateFile}`} 
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              window.open(`/api/view-pdf?file=${selectedEquipment.certificateFile}`, '_blank');
-                            }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
-                          >
-                            Certificado de Calibração
-                          </a>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="bg-[var(--card-bg)] rounded-lg p-6 shadow-md border border-[var(--card-border)] hover:shadow-lg transition-shadow duration-300">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full text-blue-600 dark:text-blue-300">
+                          <i className="bx bx-info-circle text-xl"></i>
                         </div>
-                      )}
-                      {selectedEquipment.dataRecordFile && (
-                        <div className="flex items-center space-x-2">
-                          <i className="bx bx-spreadsheet text-xl"></i>
-                          <a 
-                            href={`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`} 
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              window.open(`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`, '_blank');
-                            }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
-                          >
-                            Registro de Dados
-                          </a>
+                        <h3 className="text-lg font-semibold text-[var(--foreground)]">Informações Básicas</h3>
+                      </div>
+                      <div className="space-y-3 pl-2">
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">ID:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.id}</span>
                         </div>
-                      )}
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Tipo:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.type}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Setor:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.sector}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Status:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{getStatusText(selectedEquipment.status)}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Modelo:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.model || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Número de Série:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.serialNumber || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Fabricante:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.manufacturer || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Faixa de Medida:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.measurementRange || 'Não informado'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-[var(--card-bg)] rounded-lg p-6 shadow-md border border-[var(--card-border)] hover:shadow-lg transition-shadow duration-300">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="bg-green-100 dark:bg-green-900 p-2 rounded-full text-green-600 dark:text-green-300">
+                          <i className="bx bx-calendar-check text-xl"></i>
+                        </div>
+                        <h3 className="text-lg font-semibold text-[var(--foreground)]">Calibração e Localização</h3>
+                      </div>
+                      <div className="space-y-3 pl-2">
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Última Calibração:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{formatDate(selectedEquipment.lastCalibration)}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Próxima Calibração:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{formatDate(selectedEquipment.nextCalibration)}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 border-b border-[var(--card-border)] hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Localização Padrão:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.standardLocation || 'Não informado'}</span>
+                        </div>
+                        <div className="flex items-center py-1.5 hover:bg-[var(--card-hover)] rounded px-2 transition-colors duration-200">
+                          <span className="font-medium w-1/3 text-[var(--foreground-muted)]">Localização Atual:</span> 
+                          <span className="w-2/3 text-[var(--foreground)]">{selectedEquipment.currentLocation || 'Não informado'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-[var(--card-bg)] rounded-lg p-6 shadow-md border border-[var(--card-border)] hover:shadow-lg transition-shadow duration-300 mt-6 col-span-1 md:col-span-2">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-full text-purple-600 dark:text-purple-300">
+                          <i className="bx bx-file-blank text-xl"></i>
+                        </div>
+                        <h3 className="text-lg font-semibold text-[var(--foreground)]">Documentos</h3>
+                      </div>
+                      <div className="space-y-6">
+                        {selectedEquipment.certificateFile && (
+                          <div className="bg-[var(--card-hover)] rounded-lg p-4 border border-[var(--card-border)] transition-all duration-300 hover:shadow-md">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center space-x-3">
+                                <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full text-blue-600 dark:text-blue-300">
+                                  <i className="bx bx-certification text-xl"></i>
+                                </div>
+                                <span className="font-medium text-[var(--foreground)]">Certificado de Calibração</span>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button 
+                                  onClick={() => setShowCertificatePreview(!showCertificatePreview)}
+                                  className={`px-3 py-1.5 rounded-full text-sm flex items-center transition-all duration-300 ${showCertificatePreview 
+                                    ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800' 
+                                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'}`}
+                                >
+                                  {showCertificatePreview ? (
+                                    <>
+                                      <i className="bx bx-hide mr-1.5"></i>
+                                      Ocultar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <i className="bx bx-show mr-1.5"></i>
+                                      Visualizar
+                                    </>
+                                  )}
+                                </button>
+                                <a 
+                                  href={`/api/view-pdf?file=${selectedEquipment.certificateFile}`} 
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    window.open(`/api/view-pdf?file=${selectedEquipment.certificateFile}`, '_blank');
+                                  }}
+                                  className="px-3 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full transition-all duration-300 text-sm flex items-center dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                  <i className="bx bx-window-open mr-1.5"></i>
+                                  Nova janela
+                                </a>
+                              </div>
+                            </div>
+                            {showCertificatePreview && (
+                              <div className="mt-3 border border-[var(--card-border)] rounded-lg overflow-hidden h-[300px] w-full shadow-inner animate-fadeIn">
+                                <iframe 
+                                  src={`/api/view-pdf?file=${selectedEquipment.certificateFile}`}
+                                  className="w-full h-full"
+                                  title="Certificado de Calibração"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {selectedEquipment.dataRecordFile && (
+                          <div className="bg-[var(--card-hover)] rounded-lg p-4 border border-[var(--card-border)] transition-all duration-300 hover:shadow-md">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center space-x-3">
+                                <div className="bg-green-100 dark:bg-green-900 p-2 rounded-full text-green-600 dark:text-green-300">
+                                  <i className="bx bx-spreadsheet text-xl"></i>
+                                </div>
+                                <span className="font-medium text-[var(--foreground)]">Registro de Dados</span>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button 
+                                  onClick={() => setShowDataRecordPreview(!showDataRecordPreview)}
+                                  className={`px-3 py-1.5 rounded-full text-sm flex items-center transition-all duration-300 ${showDataRecordPreview 
+                                    ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800' 
+                                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'}`}
+                                >
+                                  {showDataRecordPreview ? (
+                                    <>
+                                      <i className="bx bx-hide mr-1.5"></i>
+                                      Ocultar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <i className="bx bx-show mr-1.5"></i>
+                                      Visualizar
+                                    </>
+                                  )}
+                                </button>
+                                <a 
+                                  href={`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`} 
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    window.open(`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`, '_blank');
+                                  }}
+                                  className="px-3 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full transition-all duration-300 text-sm flex items-center dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                  <i className="bx bx-window-open mr-1.5"></i>
+                                  Nova janela
+                                </a>
+                              </div>
+                            </div>
+                            {showDataRecordPreview && (
+                              <div className="mt-3 border border-[var(--card-border)] rounded-lg overflow-hidden h-[300px] w-full shadow-inner animate-fadeIn">
+                                <iframe 
+                                  src={`/api/view-pdf?file=${selectedEquipment.dataRecordFile}`}
+                                  className="w-full h-full"
+                                  title="Registro de Dados"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {!selectedEquipment.certificateFile && !selectedEquipment.dataRecordFile && (
+                          <div className="text-center py-8 text-[var(--foreground-muted)]">
+                            <i className="bx bx-file-blank text-4xl mb-2"></i>
+                            <p>Nenhum documento disponível para este equipamento</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-3">
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 border-t border-[var(--card-border)] sticky bottom-0 flex justify-end space-x-3">
                   <button
                     onClick={() => {
                       editEquipment(selectedEquipment.id);
                       setIsModalOpen(false);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 shadow-md hover:shadow-lg flex items-center space-x-2 transform hover:translate-y-[-2px]"
                   >
-                    Editar
+                    <i className="bx bx-edit"></i>
+                    <span>Editar Equipamento</span>
                   </button>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-md hover:bg-[var(--button-secondary-hover)] transition-colors duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                    className="px-5 py-2.5 bg-[var(--button-secondary-bg)] text-[var(--button-secondary-text)] rounded-lg hover:bg-[var(--button-secondary-hover)] transition-all duration-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 shadow hover:shadow-md flex items-center space-x-2"
                   >
-                    Fechar
+                    <i className="bx bx-x"></i>
+                    <span>Fechar</span>
                   </button>
                 </div>
               </div>
