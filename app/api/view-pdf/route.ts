@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { supabase } from '../../lib/supabaseClient';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,23 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Arquivo não especificado', { status: 400 });
     }
 
-    // Construir o caminho completo do arquivo
+    // Verificar se estamos em ambiente de produção (Vercel)
+    const isProduction = process.env.VERCEL === '1';
+
+    // Em produção, redirecionamos para a URL pública do Supabase Storage
+    if (isProduction) {
+      // Se o caminho já é um caminho do Supabase Storage (uid/tipo/arquivo)
+      if (filePath.includes('/certificados/') || filePath.includes('/registros/')) {
+        // Usar o caminho diretamente no Supabase Storage
+        const { data } = supabase.storage.from('documentos').getPublicUrl(filePath);
+        return NextResponse.redirect(data.publicUrl);
+      } else {
+        // Se for um caminho relativo da pasta public, não podemos acessá-lo em produção
+        return new NextResponse('Formato de arquivo não suportado em produção', { status: 400 });
+      }
+    }
+
+    // Em desenvolvimento, continuamos usando o sistema de arquivos local
     // Remover a barra inicial se existir para evitar problemas de caminho
     const cleanFilePath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
     const fullPath = path.join(process.cwd(), 'public', cleanFilePath);
