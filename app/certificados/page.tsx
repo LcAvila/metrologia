@@ -18,6 +18,7 @@ interface Certificate {
   fileName: string;
   fileUrl: string;
   status: 'valid' | 'expired' | 'expiring';
+  sector?: string; // Setor do equipamento
   fileObject?: File; // Propriedade opcional para armazenar o objeto File temporariamente
 }
 
@@ -27,7 +28,7 @@ export default function Certificados() {
   const [filteredCertificates, setFilteredCertificates] = useState<Certificate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('');
-  const [equipmentList, setEquipmentList] = useState<{id: string, name: string}[]>([]);
+  const [equipmentList, setEquipmentList] = useState<{id: string, name: string, sector?: string}[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,8 +42,36 @@ export default function Certificados() {
     expirationDate: '',
     calibrationDate: '',
     fileName: '',
-    fileObject: undefined
+    fileObject: undefined,
+    sector: '' // Adicionando campo para setor
   });
+  
+  // Estado para armazenar o setor selecionado
+  const [selectedSector, setSelectedSector] = useState<string>('');
+
+  // Lista de setores disponíveis
+  const sectorsList = [
+    "Injetoras",
+    "Ferramentaria",
+    "Controle da Qualidade",
+    "Point Matic",
+    "Montagem 1 (M1)",
+    "Almoxarifado 1 (ALM 1)",
+    "Almoxarifado 2 (ALM 2)",
+    "Depósito de Produtos Acabados (DPA)",
+    "Manutenção"
+  ];
+
+  // Lista de tipos de equipamentos
+  const equipmentTypes = [
+    { value: "measurement", label: "Medição Linear" },
+    { value: "weight", label: "Massa e Peso" },
+    { value: "time", label: "Tempo e Velocidade" },
+    { value: "temperature", label: "Temperatura" },
+    { value: "pressure", label: "Pressão e Vazão" },
+    { value: "optical", label: "Ópticos e Inspeção" },
+    { value: "other", label: "Outros" }
+  ];
 
   // Carregar certificados e equipamentos do localStorage ao iniciar
   useEffect(() => {
@@ -53,15 +82,41 @@ export default function Certificados() {
       setFilteredCertificates(parsedCertificates);
     }
     
-    // Carregar lista de equipamentos (simulado)
-    const equipmentData = [
-      { id: 'eq1', name: 'Paquímetro Digital' },
-      { id: 'eq2', name: 'Micrômetro Externo' },
-      { id: 'eq3', name: 'Balança Analítica' },
-      { id: 'eq4', name: 'Termômetro Digital' },
-      { id: 'eq5', name: 'Medidor de Pressão' }
-    ];
-    setEquipmentList(equipmentData);
+    // Carregar lista de equipamentos reais do localStorage
+    try {
+      const storedEquipments = localStorage.getItem('equipments');
+      if (storedEquipments) {
+        const parsedEquipments = JSON.parse(storedEquipments);
+        // Transformar os equipamentos no formato necessário para o dropdown
+        const formattedEquipments = parsedEquipments.map((eq: any) => ({
+          id: eq.id,
+          name: `${eq.id} - ${eq.type}`,
+          sector: eq.sector || ''
+        }));
+        setEquipmentList(formattedEquipments);
+      } else {
+        // Fallback para dados simulados se não houver equipamentos salvos
+        const equipmentData = [
+          { id: 'eq1', name: 'Paquímetro Digital', sector: 'Controle da Qualidade' },
+          { id: 'eq2', name: 'Micrômetro Externo', sector: 'Ferramentaria' },
+          { id: 'eq3', name: 'Balança Analítica', sector: 'Injetoras' },
+          { id: 'eq4', name: 'Termômetro Digital', sector: 'Manutenção' },
+          { id: 'eq5', name: 'Medidor de Pressão', sector: 'Point Matic' }
+        ];
+        setEquipmentList(equipmentData);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar equipamentos:', error);
+      // Fallback para dados simulados em caso de erro
+      const equipmentData = [
+        { id: 'eq1', name: 'Paquímetro Digital', sector: 'Controle da Qualidade' },
+        { id: 'eq2', name: 'Micrômetro Externo', sector: 'Ferramentaria' },
+        { id: 'eq3', name: 'Balança Analítica', sector: 'Injetoras' },
+        { id: 'eq4', name: 'Termômetro Digital', sector: 'Manutenção' },
+        { id: 'eq5', name: 'Medidor de Pressão', sector: 'Point Matic' }
+      ];
+      setEquipmentList(equipmentData);
+    }
   }, []);
 
   // Filtrar certificados com base na pesquisa e equipamento selecionado
@@ -109,19 +164,12 @@ export default function Certificados() {
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'equipmentId') {
-      const selectedEquip = equipmentList.find(eq => eq.id === value);
-      setNewCertificate(prev => ({
-        ...prev,
-        [name]: value,
-        equipmentName: selectedEquip?.name || ''
-      }));
-    } else {
-      setNewCertificate(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    // O tratamento específico para equipmentId foi movido para o onChange do select
+    // para também atualizar o setor automaticamente
+    setNewCertificate(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   // Manipular upload de arquivo
@@ -163,6 +211,7 @@ export default function Certificados() {
           id: Date.now().toString(),
           fileUrl: filePath, // Salva o caminho do Storage
           status,
+          sector: newCertificate.sector, // Inclui o setor no certificado
           fileObject: undefined
         };
 
@@ -177,8 +226,10 @@ export default function Certificados() {
           expirationDate: '',
           calibrationDate: '',
           fileName: '',
+          sector: '',
           fileObject: undefined
         });
+        setSelectedSector('');
         setShowUploadModal(false);
       } catch (error: any) {
         alert('Erro ao fazer upload do arquivo: ' + (error.message || 'Erro desconhecido'));
@@ -396,20 +447,53 @@ export default function Certificados() {
       <div className="bg-[var(--card-bg)] rounded-lg shadow-lg w-full max-w-md p-6">
         <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">Upload de Certificado</h2>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Equipamento</label>
-            <select
-              name="equipmentId"
-              className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
-              value={newCertificate.equipmentId}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Selecione um equipamento</option>
-              {equipmentList.map(eq => (
-                <option key={eq.id} value={eq.id}>{eq.name}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Equipamento</label>
+              <select
+                name="equipmentId"
+                className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+                value={newCertificate.equipmentId}
+                onChange={(e) => {
+                  const selectedEquip = equipmentList.find(eq => eq.id === e.target.value);
+                  setNewCertificate(prev => ({
+                    ...prev,
+                    equipmentId: e.target.value,
+                    equipmentName: selectedEquip?.name || '',
+                    sector: selectedEquip?.sector || ''
+                  }));
+                  setSelectedSector(selectedEquip?.sector || '');
+                }}
+                required
+              >
+                <option value="">Selecione um equipamento</option>
+                {equipmentList.map(eq => (
+                  <option key={eq.id} value={eq.id}>{eq.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Setor</label>
+              <select
+                name="sector"
+                className="w-full px-3 py-2 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)]"
+                value={newCertificate.sector}
+                onChange={(e) => {
+                  setNewCertificate(prev => ({
+                    ...prev,
+                    sector: e.target.value
+                  }));
+                  setSelectedSector(e.target.value);
+                }}
+                required
+              >
+                <option value="">Selecione um setor</option>
+                {sectorsList.map(sector => (
+                  <option key={sector} value={sector}>{sector}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Número do Certificado</label>

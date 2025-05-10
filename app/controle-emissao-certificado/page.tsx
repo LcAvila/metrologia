@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent, useCallback } from 'react';
 import Link from 'next/link';
 import { generateCertificateNumber, incrementCertificateNumber } from '../services/certificateService';
 import { useTheme } from '../context/ThemeContext';
+import { FaClipboardCheck, FaCalendarAlt, FaTools, FaBuilding, FaIdCard, FaTrash, FaEdit, FaCheck, FaFilter } from 'react-icons/fa';
 
 // Interface para o certificado
 interface Certificate {
@@ -16,17 +17,38 @@ interface Certificate {
   issueDate: string;
 }
 
-// Componente para gerar automaticamente o número do certificado
+// Componente para gerar automaticamente ou permitir entrada manual do número do certificado
 const CertificateNumberGenerator = ({ value, onChange, shouldRefresh }: { value: string, onChange: (value: string) => void, shouldRefresh: number }) => {
+  const [isAuto, setIsAuto] = useState(true);
+  
   useEffect(() => {
-    try {
-      const number = generateCertificateNumber();
-      onChange(number);
-    } catch (error) {
-      console.error('Erro ao gerar número de certificado:', error);
-      onChange('Erro');
+    // Gerar número automaticamente apenas se o modo automático estiver ativado
+    if (isAuto) {
+      try {
+        const number = generateCertificateNumber();
+        onChange(number);
+      } catch (error) {
+        console.error('Erro ao gerar número de certificado:', error);
+        onChange('Erro');
+      }
     }
-  }, [onChange, shouldRefresh]); // Atualiza quando shouldRefresh mudar
+  }, [onChange, shouldRefresh, isAuto]); // Atualiza quando shouldRefresh mudar ou modo mudar
+
+  // Função para alternar entre modo automático e manual
+  const toggleMode = () => {
+    setIsAuto(!isAuto);
+  };
+
+  // Função para atualizar o valor manualmente
+  const handleManualChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+    
+    // Atualizar o último número usado para que o próximo gerado automaticamente seja maior
+    if (newValue.trim() !== '') {
+      localStorage.setItem('lastCertificateNumber', newValue);
+    }
+  };
 
   return (
     <div className="relative">
@@ -34,11 +56,19 @@ const CertificateNumberGenerator = ({ value, onChange, shouldRefresh }: { value:
         type="text"
         id="certificateNumber"
         value={value}
-        className="w-full px-1.5 py-0.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none cursor-default"
-        readOnly
+        onChange={handleManualChange}
+        className={`w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none text-sm ${isAuto ? 'cursor-default pr-12' : ''}`}
+        readOnly={isAuto}
+        placeholder="Número do certificado"
       />
-      <div className="absolute inset-y-0 right-0 pr-1.5 flex items-center pointer-events-none">
-        <span className="text-[var(--foreground-muted)] text-xs">Auto</span>
+      <div 
+        className="absolute inset-y-0 right-0 pr-2 flex items-center cursor-pointer text-[var(--primary)] hover:text-[var(--primary-hover)]"
+        onClick={toggleMode}
+        title={isAuto ? "Clique para editar manualmente" : "Clique para gerar automaticamente"}
+      >
+        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-[var(--primary-light)] text-[var(--primary)]">
+          {isAuto ? "Auto" : "Manual"}
+        </span>
       </div>
     </div>
   );
@@ -69,6 +99,98 @@ export default function ControleEmissaoCertificado() {
   
   // Estado para edição de certificado
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Estado para seleção de certificados
+  const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [isDeleteMultipleModalOpen, setIsDeleteMultipleModalOpen] = useState(false);
+  
+  // Lista de equipamentos e setores
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+  
+  // Interface para equipamento
+  interface Equipment {
+    id: string;
+    type: string;
+    sector: string;
+    status: string;
+    lastCalibration: string;
+    nextCalibration: string;
+    standardLocation?: string;
+    currentLocation?: string;
+    measurementRange?: string;
+    model?: string;
+    serialNumber?: string;
+    manufacturer?: string;
+    certificateFile?: string;
+    dataRecordFile?: string;
+    certificateFileObject?: File;
+    dataRecordFileObject?: File;
+  }
+  
+  // Mapeamento de tipos de equipamento para prefixos
+  const equipmentTypes = [
+    'Paquímetro',
+    'Micrômetro Externo',
+    'Micrômetro Interno',
+    'Micrômetro de Profundidade',
+    'Régua Milimetrada',
+    'Trena Metálica',
+    'Calibrador de Folga',
+    'Calibrador de Rosca',
+    'Calibrador Tipo Anel',
+    'Calibrador Tipo Tampão',
+    'Pino Padrão',
+    'Balança Analítica',
+    'Balança de Precisão',
+    'Balança Industrial',
+    'Peso Padrão',
+    'Cronômetro',
+    'Tacômetro',
+    'Estroboscópio',
+    'Termômetro Digital',
+    'Termômetro Infravermelho',
+    'Termômetro de Mercúrio',
+    'Termopar',
+    'Pirômetro',
+    'Sensor RTD',
+    'Sensor PT100',
+    'Manômetro',
+    'Vacuômetro',
+    'Transdutor de Pressão',
+    'Medidor de Vazão',
+    'Medidor de Coluna de Líquido',
+    'Projetor de Perfil',
+    'Microscópio de Medição',
+    'Câmera de Inspeção',
+    'Rugosímetro',
+    'Durômetro',
+    'Refratômetro',
+    'Torquímetro',
+    'Medidor de Dureza Rockwell',
+    'Medidor de Dureza Brinell',
+    'Medidor de Dureza Vickers',
+    'Medidor de Espessura Ultrassônico',
+    'Medidor de Espessura de Pintura',
+    'Medidor de pH',
+    'Data Logger de Temperatura',
+    'Data Logger de Umidade',
+    'Colorímetro',
+    'Espectrofotômetro'
+  ];
+  
+  // Lista de setores disponíveis
+  const sectorsList = [
+    "Injetoras",
+    "Ferramentaria",
+    "Controle da Qualidade",
+    "Point Matic",
+    "Montagem 1 (M1)",
+    "Almoxarifado 1 (ALM 1)",
+    "Almoxarifado 2 (ALM 2)",
+    "Depósito de Produtos Acabados (DPA)",
+    "Manutenção"
+  ];
 
   // Carregar certificados salvos ao iniciar
   useEffect(() => {
@@ -76,6 +198,23 @@ export default function ControleEmissaoCertificado() {
     if (savedCertificates) {
       setCertificates(JSON.parse(savedCertificates));
     }
+    
+    // Sempre usar a lista de tipos de equipamento diretamente
+    // Isso garante que o dropdown sempre terá opções, independente do localStorage
+    const equipmentData = equipmentTypes.map((type, index) => {
+      // Gerar dados simulados para cada tipo de equipamento
+      return {
+        id: type,
+        type: type,
+        sector: sectorsList[Math.floor(Math.random() * sectorsList.length)],
+        status: 'ok',
+        lastCalibration: '2023-01-01',
+        nextCalibration: '2024-01-01'
+      };
+    });
+    
+    setEquipmentList(equipmentData);
+    console.log('Lista de equipamentos carregada com', equipmentData.length, 'itens');
   }, []);
 
   // Função para editar certificado
@@ -89,7 +228,7 @@ export default function ControleEmissaoCertificado() {
   }, [certificates]);
   
   // Função para excluir certificado
-  const deleteCertificate = useCallback((id: string) => {
+  const handleDelete = useCallback((id: string) => {
     setCertificateToDelete({ id });
     setIsDeleteModalOpen(true);
   }, []);
@@ -107,15 +246,75 @@ export default function ControleEmissaoCertificado() {
       setCertificateToDelete(null);
     }
   }, [certificates, certificateToDelete]);
+  
+  // Função para selecionar/deselecionar todos os certificados
+  const toggleSelectAll = useCallback(() => {
+    if (selectAll) {
+      setSelectedCertificates([]);
+    } else {
+      setSelectedCertificates(certificates.map(cert => cert.id));
+    }
+    setSelectAll(!selectAll);
+  }, [certificates, selectAll]);
+  
+  // Função para selecionar/deselecionar um certificado
+  const toggleSelectCertificate = useCallback((id: string) => {
+    setSelectedCertificates(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(certId => certId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  }, []);
+  
+  // Função para excluir múltiplos certificados
+  const handleDeleteMultiple = useCallback(() => {
+    if (selectedCertificates.length > 0) {
+      setIsDeleteMultipleModalOpen(true);
+    }
+  }, [selectedCertificates]);
+  
+  // Função para confirmar exclusão múltipla
+  const confirmDeleteMultiple = useCallback(() => {
+    const updatedCertificates = certificates.filter(cert => !selectedCertificates.includes(cert.id));
+    setCertificates(updatedCertificates);
+    
+    // Salvar no localStorage
+    localStorage.setItem('certificates', JSON.stringify(updatedCertificates));
+    
+    setIsDeleteMultipleModalOpen(false);
+    setSelectedCertificates([]);
+    setSelectAll(false);
+  }, [certificates, selectedCertificates]);
 
   // Função para atualizar os campos do formulário
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  }, []);
+    
+    // Se for o campo de equipamento, preencher automaticamente o ID e o setor
+    if (id === 'equipment') {
+      const selectedEquipment = equipmentList.find(eq => eq.id === value);
+      if (selectedEquipment) {
+        setFormData(prev => ({
+          ...prev,
+          equipment: value,
+          identification: value, // O id é o próprio nome do equipamento
+          sector: selectedEquipment.sector
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          equipment: value
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
+  }, [equipmentList]);
 
   // Função para salvar o certificado
   const handleSubmit = (e: FormEvent) => {
@@ -142,6 +341,9 @@ export default function ControleEmissaoCertificado() {
       // Salvar no localStorage
       localStorage.setItem('certificates', JSON.stringify(updatedCertificates));
       
+      // Atualizar o último número de certificado usado
+      localStorage.setItem('lastCertificateNumber', formData.certificateNumber);
+      
       // Incrementar o número do certificado após salvar
       incrementCertificateNumber();
       
@@ -167,12 +369,21 @@ export default function ControleEmissaoCertificado() {
       <div className="flex-1 transition-all duration-300">
         {/* Content */}
         <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow mb-4 border border-[var(--card-border)]">
+          <div className="mb-2 border-b border-[var(--card-border)] pb-2">
+            <h2 className="text-lg font-semibold text-[var(--foreground)] flex items-center">
+              <FaClipboardCheck className="mr-2 text-[var(--primary)]" /> 
+              Emissão de Certificado
+            </h2>
+          </div>
+          
           <form className="space-y-3" onSubmit={handleSubmit}>
             {/* Grid estilo planilha para os campos do formulário */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-1">
-              {/* Número de Certificado (Gerado automaticamente) */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+              {/* Número de Certificado (Gerado automaticamente ou manual) */}
               <div className="col-span-2 md:col-span-1">
-                <label htmlFor="certificateNumber" className="block font-medium text-[var(--foreground)] mb-0.5">Nº Certificado</label>
+                <label htmlFor="certificateNumber" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
+                  <FaIdCard className="mr-1 text-[var(--primary)] text-xs" /> Nº Certificado
+                </label>
                 <CertificateNumberGenerator 
                   value={formData.certificateNumber} 
                   onChange={handleCertificateNumberChange}
@@ -181,123 +392,175 @@ export default function ControleEmissaoCertificado() {
               </div>
               
               {/* Data de Recebimento */}
-              <div className="col-span-1 md:col-span-1">
-                <label htmlFor="receiveDate" className="block font-medium text-[var(--foreground)] mb-0.5">Recebimento</label>
+              <div className="col-span-2 md:col-span-1">
+                <label htmlFor="receiveDate" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
+                  <FaCalendarAlt className="mr-1 text-[var(--primary)] text-xs" /> Recebimento
+                </label>
                 <input 
                   type="date" 
                   id="receiveDate" 
                   value={formData.receiveDate}
                   onChange={handleChange}
-                  className="w-full px-1.5 py-0.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
+                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
                 />
               </div>
               
               {/* Data de Emissão */}
-              <div className="col-span-1 md:col-span-1">
-                <label htmlFor="issueDate" className="block font-medium text-[var(--foreground)] mb-0.5">Emissão</label>
+              <div className="col-span-2 md:col-span-1">
+                <label htmlFor="issueDate" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
+                  <FaCalendarAlt className="mr-1 text-[var(--primary)] text-xs" /> Emissão
+                </label>
                 <input 
                   type="date" 
                   id="issueDate" 
                   value={formData.issueDate}
                   onChange={handleChange}
-                  className="w-full px-1.5 py-0.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
+                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
                 />
               </div>
               
               {/* Equipamento */}
-              <div className="col-span-2 md:col-span-1">
-                <label htmlFor="equipment" className="block font-medium text-[var(--foreground)] mb-0.5">Equipamento</label>
-                <input 
-                  type="text" 
-                  id="equipment" 
+              <div className="col-span-4 md:col-span-2">
+                <label htmlFor="equipment" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
+                  <FaTools className="mr-1 text-[var(--primary)] text-xs" /> Equipamento
+                </label>
+                <select
+                  id="equipment"
                   value={formData.equipment}
                   onChange={handleChange}
-                  className="w-full px-1.5 py-0.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
-                  placeholder="Nome do equipamento"
-                />
+                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
+                >
+                  <option value="">Selecione um equipamento</option>
+                  {equipmentTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </div>
               
               {/* Identificação */}
               <div className="col-span-2 md:col-span-1">
-                <label htmlFor="identification" className="block font-medium text-[var(--foreground)] mb-0.5">ID</label>
+                <label htmlFor="identification" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
+                  <FaIdCard className="mr-1 text-[var(--primary)] text-xs" /> ID
+                </label>
                 <input 
                   type="text" 
                   id="identification" 
                   value={formData.identification}
                   onChange={handleChange}
-                  className="w-full px-1.5 py-0.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
+                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
                   placeholder="ID"
                 />
               </div>
               
               {/* Setor */}
-              <div className="col-span-2 md:col-span-1">
-                <label htmlFor="sector" className="block font-medium text-[var(--foreground)] mb-0.5">Setor</label>
-                <input 
-                  type="text" 
-                  id="sector" 
+              <div className="col-span-4 md:col-span-2">
+                <label htmlFor="sector" className="block text-sm font-medium text-[var(--foreground)] mb-1 flex items-center">
+                  <FaBuilding className="mr-1 text-[var(--primary)] text-xs" /> Setor
+                </label>
+                <select
+                  id="sector"
                   value={formData.sector}
                   onChange={handleChange}
-                  className="w-full px-1.5 py-0.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1"
-                  placeholder="Setor"
-                />
+                  className="w-full px-2 py-1.5 border border-[var(--input-border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 transition-colors duration-200 text-sm"
+                >
+                  <option value="">Selecione um setor</option>
+                  {sectorsList.map(sector => (
+                    <option key={sector} value={sector}>{sector}</option>
+                  ))}
+                </select>
               </div>
             </div>
             
-            <div className="pt-3">
+            <div className="pt-2">
               <button 
                 type="submit" 
-                className="w-full bg-[var(--primary)] text-white py-1.5 px-3 text-sm rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 font-medium transition-colors duration-300"
+                className="w-full bg-[var(--primary)] text-white py-1.5 px-3 text-sm rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:ring-offset-1 font-medium transition-all duration-300 shadow-sm hover:shadow flex items-center justify-center"
               >
-                {isEditing ? 'Atualizar Certificado' : 'Salvar Certificado'}
+                <FaClipboardCheck className="mr-1.5 text-sm" />
+                {isEditing ? 'Atualizar Certificado' : 'Emitir Certificado'}
               </button>
             </div>
           </form>
         </div>
         
-        {/* Tabela de certificados cadastrados */}
+        {/* Tabela de Certificados */}
         <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow border border-[var(--card-border)]">
-          <h2 className="text-lg font-semibold mb-3 text-[var(--foreground)]">Certificados Cadastrados</h2>
+          <div className="flex justify-between items-center mb-2 border-b border-[var(--card-border)] pb-2">
+            <h2 className="text-lg font-semibold text-[var(--foreground)] flex items-center">
+              <FaClipboardCheck className="mr-2 text-[var(--primary)] text-sm" /> 
+              Certificados Emitidos
+            </h2>
+            <div className="flex items-center space-x-2">
+              {selectedCertificates.length > 0 && (
+                <button
+                  onClick={handleDeleteMultiple}
+                  className="bg-red-100 text-red-600 hover:bg-red-200 text-xs font-medium py-1 px-2 rounded flex items-center transition-colors duration-200"
+                >
+                  <FaTrash className="mr-1 text-xs" />
+                  Excluir ({selectedCertificates.length})
+                </button>
+              )}
+              <span className="bg-[var(--primary-light)] text-[var(--primary)] text-xs font-medium py-1 px-2 rounded-full">
+                {certificates.length} certificados
+              </span>
+            </div>
+          </div>
           
           {certificates.length === 0 ? (
             <p className="text-[var(--muted)] italic text-sm">Nenhum certificado cadastrado.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-[var(--card-border)]">
-                <thead className="bg-[var(--background-muted)] bg-opacity-50">
-                  <tr>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Nº Certificado</th>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Equipamento</th>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Identificação</th>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Setor</th>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Recebimento</th>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Emissão</th>
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Ações</th>
+                <thead>
+                  <tr className="bg-[var(--card-header-bg)]">
+                    <th className="px-2 py-1.5 text-left">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectAll}
+                          onChange={toggleSelectAll}
+                          className="h-3.5 w-3.5 rounded border-[var(--input-border)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                        />
+                      </div>
+                    </th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-[var(--foreground-secondary)] uppercase tracking-wider">Nº Certificado</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-[var(--foreground-secondary)] uppercase tracking-wider">Equipamento</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-[var(--foreground-secondary)] uppercase tracking-wider">Setor</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-[var(--foreground-secondary)] uppercase tracking-wider">Recebimento</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-[var(--foreground-secondary)] uppercase tracking-wider">Emissão</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-medium text-[var(--foreground-secondary)] uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="bg-[var(--card-bg)] divide-y divide-[var(--card-border)]">
+                <tbody className="divide-y divide-[var(--card-border)]">
                   {certificates.map((cert) => (
-                    <tr key={cert.id}>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-[var(--foreground)]">{cert.certificateNumber}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs text-[var(--muted)]">{cert.equipment}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs text-[var(--muted)]">{cert.identification}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs text-[var(--muted)]">{cert.sector}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs text-[var(--muted)]">{cert.receiveDate}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs text-[var(--muted)]">{cert.issueDate}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs text-[var(--muted)] space-x-2">
-                        <button 
-                          className="p-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1 inline-flex items-center justify-center"
+                    <tr key={cert.id} className={`hover:bg-[var(--hover-bg)] ${selectedCertificates.includes(cert.id) ? 'bg-[var(--selected-row-bg)]' : ''}`}>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedCertificates.includes(cert.id)}
+                          onChange={() => toggleSelectCertificate(cert.id)}
+                          className="h-3.5 w-3.5 rounded border-[var(--input-border)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-xs text-[var(--foreground)]">{cert.certificateNumber}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-xs text-[var(--foreground)]">{cert.equipment}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-xs text-[var(--foreground)]">{cert.sector}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-xs text-[var(--foreground)]">{cert.receiveDate}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-xs text-[var(--foreground)]">{cert.issueDate}</td>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-right">
+                        <button
                           onClick={() => editCertificate(cert.id)}
+                          className="text-[var(--primary)] hover:text-[var(--primary-hover)] mr-2 text-xs"
                           title="Editar"
                         >
-                          <i className="bx bx-edit-alt text-lg"></i>
+                          <FaEdit />
                         </button>
-                        <button 
-                          className="p-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1 inline-flex items-center justify-center"
-                          onClick={() => deleteCertificate(cert.id)}
+                        <button
+                          onClick={() => handleDelete(cert.id)}
+                          className="text-red-500 hover:text-red-700 text-xs"
                           title="Excluir"
                         >
-                          <i className="bx bx-trash text-lg"></i>
+                          <FaTrash />
                         </button>
                       </td>
                     </tr>
@@ -309,34 +572,51 @@ export default function ControleEmissaoCertificado() {
         </div>
       </div>
       
-      {/* Modal de Confirmação de Exclusão */}
-      {isDeleteModalOpen && certificateToDelete && (
+      {/* Modal de confirmação de exclusão */}
+      {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[var(--card-bg)] rounded-lg p-6 max-w-md w-full">
-            <div className="flex flex-col items-center text-center mb-4">
-              <div className="bg-red-100 p-3 rounded-full mb-4">
-                <i className="bx bx-trash text-red-600 text-3xl"></i>
-              </div>
-              <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Confirmar Exclusão</h2>
-              <p className="text-[var(--muted)] mb-4">
-                Tem certeza que deseja excluir este certificado?
-                <br />
-                Esta ação não pode ser desfeita.
-              </p>
-            </div>
-            
-            <div className="flex justify-center space-x-4">
-              <button 
+          <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow-lg max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-3 text-[var(--foreground)]">Confirmar Exclusão</h3>
+            <p className="mb-4 text-[var(--foreground)]">Tem certeza que deseja excluir este certificado?</p>
+            <div className="flex justify-end space-x-3">
+              <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                className="px-3 py-1.5 border border-[var(--card-border)] rounded-md text-[var(--foreground)] hover:bg-[var(--hover-bg)] text-sm"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1"
+                className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
               >
                 Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de confirmação de exclusão múltipla */}
+      {isDeleteMultipleModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow-lg max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-3 text-[var(--foreground)]">Confirmar Exclusão Múltipla</h3>
+            <p className="mb-4 text-[var(--foreground)]">
+              Tem certeza que deseja excluir {selectedCertificates.length} certificado(s)?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsDeleteMultipleModalOpen(false)}
+                className="px-3 py-1.5 border border-[var(--card-border)] rounded-md text-[var(--foreground)] hover:bg-[var(--hover-bg)] text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteMultiple}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center"
+              >
+                <FaTrash className="mr-1.5 text-xs" />
+                Excluir {selectedCertificates.length} item(ns)
               </button>
             </div>
           </div>
