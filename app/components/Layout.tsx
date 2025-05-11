@@ -36,22 +36,19 @@ const Layout = memo(function Layout({ children, title }: LayoutProps) {
   }, []);
   
   return (
-    <NotificationProvider>
-      <div className={`flex min-h-screen transition-colors duration-300 relative ${theme === 'dark' ? 'bg-slate-950' : 'bg-[var(--background)]'}`}>
-        <div className="background-grid"></div>
-        <div className="background-blur"></div>
-        <Sidebar title={title} />
+    <div className={`flex min-h-screen transition-colors duration-300 relative ${theme === 'dark' ? 'bg-slate-950' : 'bg-[var(--background)]'}`}>
+      <div className="background-grid"></div>
+      <div className="background-blur"></div>
+      <Sidebar title={title} />
 
-        {/* Main Content */}
-        <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-16'} pt-14 sm:pt-16 md:pt-0 relative z-10 max-w-full`}>
-          {/* Content */}
-          <main className="p-2 sm:p-3 md:p-5 overflow-x-hidden">
-            <h1 className={`text-base sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 md:mb-5 ${theme === 'dark' ? 'text-[var(--foreground)]' : 'text-[var(--foreground)]'}`}>{title}</h1>
-            {children}
-          </main>
-        </div>
+      {/* Main Content */}
+      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-16'} pt-14 sm:pt-16 md:pt-0 relative z-10 max-w-full`}>
+        <main className="p-2 sm:p-3 md:p-5 overflow-x-hidden">
+          <h1 className={`text-base sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 md:mb-5 ${theme === 'dark' ? 'text-[var(--foreground)]' : 'text-[var(--foreground)]'}`}>{title}</h1>
+          {children}
+        </main>
       </div>
-    </NotificationProvider>
+    </div>
   );
 });
 
