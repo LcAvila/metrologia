@@ -14,13 +14,15 @@ import {
 } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { signInWithEmail, getUserType } from '../../lib/supabaseClient';
+import { signInWithEmail, getUserType, getEmailFromUsuario } from '../../lib/supabaseClient';
 import ResetPasswordModal from './ResetPasswordModal';
+
+import LoadingSpinner from '../LoadingSpinner';
 
 export default function LoginForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
+    matricula: '', // Alterado de usuarioOuEmail para matricula
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +38,8 @@ export default function LoginForm() {
     }));
   };
 
+
+
   const handleTogglePassword = () => {
     setShowPassword(prev => !prev);
   };
@@ -46,9 +50,15 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
+      // Buscar email se necessário, usando a matrícula
+      const emailParaLogin = await getEmailFromUsuario(formData.matricula);
+      if (!emailParaLogin) {
+        setError('Matrícula não encontrada.'); // Mensagem atualizada
+        setIsLoading(false);
+        return;
+      }
       // Realizar login
-      const { data, error } = await signInWithEmail(formData.email, formData.password);
-      
+      const { data, error } = await signInWithEmail(emailParaLogin, formData.password);
       if (error) {
         throw error;
       }
@@ -57,13 +67,22 @@ export default function LoginForm() {
       if (data.user) {
         const userType = await getUserType(data.user.id);
         
-        // Redirecionar com base no tipo de usuário
-        if (userType === 'metrologista') {
+        // Redirecionar com base no tipo de usuário OU e-mail específico
+        if (emailParaLogin === 'lucasavila1972@gmail.com') {
+          console.log('Login com lucasavila1972@gmail.com. Redirecionando para /fispq');
+          router.push('/fispq');
+        } else if (userType === 'admin') {
+          console.log('Usuário autenticado como admin. Redirecionando para /admin');
+          router.push('/admin');
+        } else if (userType === 'metrologista') {
+          console.log('Usuário autenticado como metrologista. Redirecionando para /metrologia');
           router.push('/metrologia');
         } else if (userType === 'quimico') {
+          console.log('Usuário autenticado como quimico. Redirecionando para /fispq');
           router.push('/fispq');
         } else {
           // Se não tiver tipo definido, redirecionar para a página inicial
+          console.log('Tipo de usuário não reconhecido. Redirecionando para /');
           router.push('/');
         }
       }
@@ -72,7 +91,7 @@ export default function LoginForm() {
       
       // Tratar erros específicos
       if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = 'E-mail ou senha incorretos.';
+        errorMessage = 'Matrícula ou senha incorretos.'; // Mensagem atualizada
       } else if (error.message?.includes('rate limit')) {
         errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
       }
@@ -83,9 +102,11 @@ export default function LoginForm() {
     }
   };
 
-  return (
-    <>
-      <Box className="min-h-screen flex items-center justify-center px-4 py-8">
+  return isLoading ? (
+  <LoadingSpinner />
+) : (
+  <>
+    <Box className="min-h-screen flex items-center justify-center px-4 py-8">
         <div className="background-grid"></div>
         <div className="background-blur"></div>
         <Paper
@@ -122,13 +143,14 @@ export default function LoginForm() {
               margin="normal"
               required
               fullWidth
-              id="email"
-              label="E-mail"
-              name="email"
-              autoComplete="email"
+              id="matricula" // Alterado de usuarioOuEmail
+              label="Matrícula" // Alterado de "Usuário ou E-mail"
+              name="matricula" // Alterado de usuarioOuEmail
+              autoComplete="off" // Alterado de username, 'off' ou 'tel' podem ser mais apropriados
               autoFocus
-              value={formData.email}
+              value={formData.matricula} // Alterado de formData.usuarioOuEmail
               onChange={handleInputChange}
+              disabled={isLoading}
               InputProps={{
                 style: {
                   backgroundColor: 'var(--input-bg)',
@@ -155,7 +177,7 @@ export default function LoginForm() {
                   '&.MuiInputLabel-shrink': { color: 'var(--primary)' },
                 }
               }}
-              aria-label="Endereço de e-mail"
+              aria-label="Matrícula" // Alterado
             />
             <TextField
               margin="normal"

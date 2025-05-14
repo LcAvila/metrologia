@@ -8,6 +8,10 @@ export async function uploadToStorage(file: File, tipo: 'certificados' | 'regist
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Usuário não autenticado');
 
+  if (!file || file.size === 0) {
+    throw new Error('Arquivo inválido ou vazio.');
+  }
+
   const uid = user.id;
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}_${file.name}`;
@@ -17,9 +21,12 @@ export async function uploadToStorage(file: File, tipo: 'certificados' | 'regist
     .from('documentos')
     .upload(filePath, file, {
       cacheControl: '3600',
-      upsert: false
+      upsert: true // Permite sobrescrever se já existir
     });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Erro ao fazer upload:', error.message || error);
+    throw new Error(error.message || 'Erro desconhecido ao fazer upload');
+  }
   return filePath;
 }

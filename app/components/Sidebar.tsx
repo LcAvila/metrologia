@@ -12,6 +12,24 @@ interface SidebarProps {
 const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [userType, setUserType] = useState<'admin' | 'metrologista' | 'quimico' | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchUserTypeAndEmail() {
+      const { data } = await supabase.auth.getUser();
+      const userId = data?.user?.id;
+      const email = data?.user?.email;
+      if (userId) {
+        const tipo = await (await import('../lib/supabaseClient')).getUserType(userId);
+        setUserType(tipo);
+      }
+      if (email) {
+        setUserEmail(email);
+      }
+    }
+    fetchUserTypeAndEmail();
+  }, []);
 
   useEffect(() => {
     // Verificar e atualizar o estado da sidebar após a montagem do componente
@@ -147,92 +165,119 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
         </div>
         <nav className="p-4 flex flex-col h-full justify-between flex-grow overflow-y-auto">
           <ul className="space-y-2">
-            {[
-              { href: '/', icon: 'bx-wrench', text: 'Equipamentos' },
-              { href: '/cadastro-equipamento', icon: 'bx-plus-circle', text: 'Cadastrar Equipamento' },
-              { href: '/controle-emissao-certificado', icon: 'bxs-objects-horizontal-left', text: 'Controle de Emissão de Certificado' },
-              { href: '/certificados', icon: 'bxs-report', text: 'Certificados' }
-            ].map((item, index) => (
-              <li key={item.href} style={{ animationDelay: `${index * 100}ms` }}>
-                <Link 
-                  href={item.href} 
-                  className="flex items-center p-2 rounded-lg transition-all duration-200 hover:bg-[var(--sidebar-hover)] hover:shadow-md relative group"
-                  title={!isExpanded ? item.text : ''}
-                >
-                  {/* Apply sidebar text color directly */}
-                  <i className={`bx ${item.icon} ${isExpanded ? 'mr-2' : 'mx-auto'} text-xl text-[var(--sidebar-text)]`}></i>
-                  {isExpanded ? (
-                    <span className="transition-opacity duration-300">{item.text}</span>
-                  ) : (
-                    <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md">
-                      {item.text}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
+            {/* Só renderiza os links quando userType está carregado */}
+            {userType && (() => {
+              const metrologiaLinks = [
+                { href: '/metrologia', icon: 'bx-wrench', text: 'Equipamentos' },
+                { href: '/metrologia/cadastro-equipamento', icon: 'bx-plus-circle', text: 'Cadastrar Equipamento' },
+                { href: '/controle-emissao-certificado', icon: 'bxs-objects-horizontal-left', text: 'Controle de Emissão de Certificado' },
+                { href: '/certificados', icon: 'bxs-report', text: 'Certificados' }
+              ];
+              const fisqpLinks = [
+                { href: '/fispq', icon: 'bx-file-blank', text: 'FISQPs' },
+                { href: '/fispq/cadastro', icon: 'bx-plus-circle', text: 'Nova FISQP' },
+                { href: '/fispq/emergencia', icon: 'bx-first-aid', text: 'Ficha de Emergência' }
+              ];
+              const adminLinks = [
+                { href: '/admin', icon: 'bx-grid-alt', text: 'Painel Admin' }
+              ];
+              let linksToShow: {href: string, icon: string, text: string}[] = [];
+              if (userEmail === 'lucasavila1972@gmail.com') {
+                linksToShow = fisqpLinks;
+              } else if (userType === 'admin') {
+                linksToShow = [
+                  { href: '', icon: '', text: 'Metrologia' },
+                  ...metrologiaLinks,
+                  { href: '', icon: '', text: 'FISQP' },
+                  ...fisqpLinks,
+                  { href: '', icon: '', text: 'Administração' },
+                  ...adminLinks
+                ];
+              } else if (userType === 'metrologista') {
+                linksToShow = metrologiaLinks;
+              } else if (userType === 'quimico') {
+                linksToShow = fisqpLinks;
+              }
+              return linksToShow.map((item, index) => (
+                item.href ? (
+                  <li key={item.href} style={{ animationDelay: `${index * 100}ms` }}>
+                    <Link 
+                      href={item.href} 
+                      className="flex items-center p-2 rounded-lg transition-all duration-200 hover:bg-[var(--sidebar-hover)] hover:shadow-md relative group"
+                      title={!isExpanded ? item.text : ''}
+                    >
+                      {item.icon && <i className={`bx ${item.icon} ${isExpanded ? 'mr-2' : 'mx-auto'} text-xl text-[var(--sidebar-text)]`}></i>}
+                      {isExpanded ? (
+                        <span className="transition-opacity duration-300">{item.text}</span>
+                      ) : (
+                        <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md">
+                          {item.text}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                ) : (
+                  <li key={item.text} className="mt-4 mb-1 text-xs font-bold text-[var(--sidebar-text)] uppercase tracking-widest opacity-70">
+                    {item.text}
+                  </li>
+                )
+              ));
+            })()}
           </ul>
           <div className="p-2 mt-auto border-t border-opacity-20 border-[var(--sidebar-text)] w-full">
-            <div 
-              className="flex items-center justify-center w-full p-2 rounded-lg transition-all duration-200 cursor-pointer"
-            >
-              {isExpanded ? (
-                <>
-                  {/* Layout para sidebar expandida */}
-                  <i className={`bx bx-sun text-xl ${theme === 'light' ? 'text-amber-300' : 'opacity-50'} mr-2`}></i>
-                  
-                  {/* Switch Interruptor */}
-                  <div className="relative flex items-center">
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={theme === 'dark'}
-                        onChange={toggleTheme}
-                        aria-label="Alternar tema"
-                      />
-                      <div className="relative w-11 h-6 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-                    </label>
-                  </div>
-                  
-                  {/* Use light/dark variants for moon icon color */}
-                  <i className={`bx bx-moon text-xl ml-2 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
-                </>
-              ) : (
-                <>
-                  {/* Layout para sidebar recolhida - centralizado verticalmente */}
-                  {/* Removed redundant group class, parent div now has it */}
-                  <div className="flex flex-col items-center">
-                    <i className={`bx bx-sun text-xl ${theme === 'light' ? 'text-[var(--warning)]' : 'opacity-50'} mb-1`}></i>
-                    
-                    {/* Switch Interruptor */}
-                    <div className="relative flex items-center my-1">
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={theme === 'dark'}
-                          onChange={toggleTheme}
-                          aria-label="Alternar tema"
-                        />
-                        <div className="relative w-8 h-4 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[var(--primary)] scale-90"></div>
-                      </label>
-                    </div>
-                    
-                    {/* Use light/dark variants for moon icon color */}
-                    <i className={`bx bx-moon text-xl mt-1 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
-                  </div>
-                </>
-              )}
-              
-              {/* Tooltip para quando recolhido */}
-              {!isExpanded && (
-                <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md">
-                  Alternar tema
-                </span>
-              )}
-            </div>
+  <>
+    <div 
+      className="flex items-center justify-center w-full p-2 rounded-lg transition-all duration-200 cursor-pointer"
+    >
+      {/* Layout para sidebar expandida/recolhida */}
+      {isExpanded ? (
+        <div className="flex items-center">
+          {/* Switch Interruptor */}
+          <div className="relative flex items-center">
+            <label className="inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={theme === 'dark'}
+                onChange={toggleTheme}
+                aria-label="Alternar tema"
+              />
+              <div className="relative w-11 h-6 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+            </label>
           </div>
+          {/* Use light/dark variants for moon icon color */}
+          <i className={`bx bx-moon text-xl ml-2 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <i className="bx bx-sun text-xl text-yellow-400 mb-1"></i>
+          {/* Switch Interruptor */}
+          <div className="relative flex items-center my-1">
+            <label className="inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={theme === 'dark'}
+                onChange={toggleTheme}
+                aria-label="Alternar tema"
+              />
+              <div className="relative w-8 h-4 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[var(--primary)] scale-90"></div>
+            </label>
+          </div>
+          {/* Use light/dark variants for moon icon color */}
+          <i className={`bx bx-moon text-xl mt-1 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
+        </div>
+      )}
+      
+      {/* Tooltip para quando recolhido */}
+      {!isExpanded && (
+        <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md">
+          Alternar tema
+        </span>
+      )}
+    </div>
+  </>
+</div>
           <button
             className={`flex items-center justify-center w-full mt-4 p-2 rounded-lg transition-colors duration-200 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 ${isExpanded ? 'justify-start' : 'justify-center'}`}
             onClick={async () => {

@@ -1,0 +1,167 @@
+import { FISPQ, FISPQFilter } from '../types/fispq';
+import { supabase } from '../../lib/supabaseClient';
+import { storageService } from '../../services/storageService';
+
+export const fispqService = {
+  async create(fispq: Omit<FISPQ, 'id' | 'criadoEm'>, arquivo: File): Promise<FISPQ> {
+    try {
+      // Verificar se o usuário está autenticado
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado. Faça login para continuar.');
+      }
+      
+      // Verificar se o bucket existe
+      const bucketName = 'fispqs';
+      const exists = await storageService.bucketExists(bucketName);
+      if (!exists) {
+        throw new Error('O bucket fispqs não existe no Supabase. Por favor, crie manualmente no painel administrativo.');
+      }
+      
+      // Fazer upload do arquivo usando o serviço unificado
+      const filePath = await storageService.uploadFile(arquivo, bucketName);
+      
+      // Obter a URL pública do arquivo
+      const arquivoUrl = storageService.getPublicUrl(bucketName, filePath);
+        
+      // Salvar os dados no banco de dados
+      const { data, error } = await supabase
+        .from('fispqs')
+        .insert({
+          ...fispq,
+          arquivoUrl,
+          criadoEm: new Date().toISOString(),
+          // Adicionar user_id para RLS
+          user_id: session.user.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao inserir no banco de dados:', error);
+        throw new Error('Erro ao salvar os dados. Verifique se você tem permissões na tabela fispqs.');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Erro ao criar FISPQ:', error);
+      throw error;
+    }
+  },
+
+  async update(id: string, fispq: Partial<FISPQ>, arquivo?: File): Promise<FISPQ> {
+    let arquivoUrl = fispq.arquivoUrl;
+
+    if (arquivo) {
+      if (arquivo.size === 0) {
+        throw new Error('Arquivo inválido ou vazio.');
+      }
+      
+      // Verificar se o bucket existe
+      const bucketName = 'fispqs';
+      const exists = await storageService.bucketExists(bucketName);
+      if (!exists) {
+        throw new Error('O bucket fispqs não existe no Supabase. Por favor, crie manualmente no painel administrativo.');
+      }
+      
+      // Fazer upload do novo arquivo usando o serviço unificado
+      const filePath = await storageService.uploadFile(arquivo, bucketName);
+      
+      // Obter a URL pública do arquivo
+      arquivoUrl = storageService.getPublicUrl(bucketName, filePath);
+    }
+
+    // Atualizar registro
+    const { data, error } = await supabase
+      .from('fispqs')
+      .update({ ...fispq, arquivoUrl })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('fispqs')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getById(id: string): Promise<FISPQ | null> {
+    const { data, error } = await supabase
+      .from('fispqs')
+      .select()
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async list(filter?: FISPQFilter) {
+    let query = supabase.from('fispqs').select();
+
+    if (filter) {
+      if (filter.produto) {
+        query = query.ilike('produto', `%${filter.produto}%`);
+      }
+      if (filter.fabricante) {
+        query = query.ilike('fabricante', `%${filter.fabricante}%`);
+      }
+      if (filter.numeroCas) {
+        query = query.eq('numeroCas', filter.numeroCas);
+      }
+      if (filter.setor) {
+        query = query.eq('setor', filter.setor);
+      }
+      if (filter.tipoRisco) {
+        query = query.eq('tipoRisco', filter.tipoRisco);
+      }
+      if (filter.validadeInicio) {
+        const dataInicio = new Date(filter.validadeInicio);
+        query = query.gte('validade', dataInicio.toISOString());
+      }
+      if (filter.validadeFim) {
+        const dataFim = new Date(filter.validadeFim);
+        query = query.lte('validade', dataFim.toISOString());
+      }
+    }
+
+    const { data, error } = await query.order('criadoEm', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getStatistics() {
+    const { data: totalFispqs, error: countError } = await supabase
+      .from('fispqs')
+      .select('id', { count: 'exact' });
+
+    if (countError) throw countError;
+
+    const { data: expiringFispqs, error: expiringError } = await supabase
+      .from('fispqs')
+      .select()
+      .gte('validade', new Date().toISOString())
+      .lte('validade', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    if (expiringError) throw expiringError;
+
+    const { data: setores, error: setoresError } = await supabase
+      .from('fispqs')
+      .select('setor');
+
+    if (setoresError) throw setoresError;
+
+    return {
+      total: totalFispqs.length,
+      expirando: expiringFispqs.length,
+      setores: [...new Set(setores.map(s => s.setor))].length
+    };
+  }
+};
