@@ -11,6 +11,7 @@ interface Props {
   params: {
     id: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 export default function EditarFISPQ({ params }: Props) {
