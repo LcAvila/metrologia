@@ -231,22 +231,25 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
     >
       {/* Layout para sidebar expandida/recolhida */}
       {isExpanded ? (
-        <div className="flex items-center">
+        <div className="flex items-center p-2 rounded-lg">
+          <span className="mr-2 text-sm font-medium">Tema</span>
           {/* Switch Interruptor */}
-          <div className="relative flex items-center">
-            <label className="inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={theme === 'dark'}
-                onChange={toggleTheme}
-                aria-label="Alternar tema"
-              />
-              <div className="relative w-11 h-6 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-            </label>
+          <div className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="sr-only peer" 
+              checked={theme === 'dark'}
+              onChange={toggleTheme}
+              aria-label="Alternar tema"
+            />
+            <div className="relative w-8 h-4 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[var(--primary)] scale-90"></div>
           </div>
-          {/* Use light/dark variants for moon icon color */}
-          <i className={`bx bx-moon text-xl ml-2 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
+          {/* Light/dark icons */}
+          {theme === 'dark' ? (
+            <i className={`bx bx-moon text-xl ml-2 text-[var(--primary)] opacity-100`}></i>
+          ) : (
+            <i className={`bx bx-sun text-xl ml-2 text-yellow-400`}></i>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center">
