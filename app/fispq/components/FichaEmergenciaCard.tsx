@@ -4,16 +4,8 @@ import { HiShieldExclamation, HiDownload, HiDocumentText, HiOutlinePencil, HiTra
 import { motion } from 'framer-motion';
 import VisualizarPdf from '../../components/VisualizarPdf';
 
-interface FichaEmergencia {
-  id: string;
-  nome: string;
-  produto: string;
-  numeroOnu: string;
-  classeRisco: string;
-  validade: Date;
-  arquivoUrl: string;
-  criadoEm: Date;
-}
+// Importar a interface FichaEmergencia em vez de redefini-la localmente
+import { FichaEmergencia } from '../types/fichaEmergencia';
 
 interface FichaEmergenciaCardProps {
   ficha: FichaEmergencia;
@@ -31,16 +23,46 @@ const FichaEmergenciaCard: React.FC<FichaEmergenciaCardProps> = ({
   const [showPdf, setShowPdf] = useState(false);
 
   const isExpiring = () => {
-    const today = new Date();
-    const validadeDate = new Date(ficha.validade);
-    const diffDays = Math.ceil((validadeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays <= 30 && diffDays > 0;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Garantir que a data seja convertida corretamente
+      const validadeDate = typeof ficha.validade === 'string' 
+        ? new Date(ficha.validade) 
+        : ficha.validade;
+      
+      // Normalizar para comparar apenas as datas (sem horas)
+      const validadeNormalizada = new Date(validadeDate);
+      validadeNormalizada.setHours(0, 0, 0, 0);
+      
+      const diffDays = Math.ceil((validadeNormalizada.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays <= 30 && diffDays > 0;
+    } catch (error) {
+      console.error('Erro ao calcular data de expiração:', error);
+      return false;
+    }
   };
 
   const isExpired = () => {
-    const today = new Date();
-    const validadeDate = new Date(ficha.validade);
-    return validadeDate < today;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Garantir que a data seja convertida corretamente
+      const validadeDate = typeof ficha.validade === 'string' 
+        ? new Date(ficha.validade) 
+        : ficha.validade;
+      
+      // Normalizar para comparar apenas as datas (sem horas)
+      const validadeNormalizada = new Date(validadeDate);
+      validadeNormalizada.setHours(0, 0, 0, 0);
+      
+      return validadeNormalizada < today;
+    } catch (error) {
+      console.error('Erro ao verificar se data está expirada:', error);
+      return true; // Assume expirado em caso de erro
+    }
   };
 
   const getStatusBadge = () => {
@@ -96,7 +118,20 @@ const FichaEmergenciaCard: React.FC<FichaEmergenciaCardProps> = ({
               </div>
               <div>
                 <p className="text-xs text-gray-500">Validade</p>
-                <p className="text-sm text-white">{new Date(ficha.validade).toLocaleDateString('pt-BR')}</p>
+                <p className="text-sm text-white">
+                  {(() => {
+                    try {
+                      // Tenta converter para Date e formatar, se falhar mostra o valor original
+                      const data = typeof ficha.validade === 'string' 
+                        ? new Date(ficha.validade) 
+                        : ficha.validade;
+                      return data.toLocaleDateString('pt-BR');
+                    } catch (error) {
+                      console.error('Erro ao formatar data de validade:', error);
+                      return String(ficha.validade);
+                    }
+                  })()}
+                </p>
               </div>
             </div>
           </div>
