@@ -21,25 +21,38 @@ export async function GET(request: NextRequest) {
     // Em produção, tentamos várias abordagens
     if (isProduction) {
       // Verificar se o arquivo está no bucket 'documentos'
+      // Limpar e codificar o caminho do arquivo
+      // Remover caracteres problemáticos do nome do arquivo
+      let cleanedPath = filePath
+        .replace(/\s+/g, '_')          // Substitui espaços por underscores
+        .normalize('NFD')              // Normaliza caracteres especiais
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-zA-Z0-9_\-.]/g, '_'); // Substitui caracteres não alfanuméricos
+        
+      console.log('Nome de arquivo limpo:', cleanedPath);
+      
       // Determinar qual bucket usar com base no caminho do arquivo
       let bucket = 'certificados'; // Mudando para 'certificados' como bucket padrão
       
       // Tentar adivinhar o bucket correto com base no nome do arquivo
-      if (filePath.includes('fispq') || filePath.includes('quimico')) {
+      if (filePath.toLowerCase().includes('fispq') || filePath.toLowerCase().includes('quimico')) {
         bucket = 'fisqps';
-      } else if (filePath.includes('certificado') || filePath.includes('metrologista')) {
+      } else if (filePath.toLowerCase().includes('certificado') || filePath.toLowerCase().includes('metrologista')) {
         bucket = 'certificados';
-      } else if (filePath.includes('emergencia')) {
+      } else if (filePath.toLowerCase().includes('emergencia')) {
         bucket = 'fichas_emergencia';
-      } else if (filePath.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      } else if (filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/i)) {
         bucket = 'fotos';
       }
       
       console.log(`Tentando acessar no bucket: ${bucket}`);
       
+      // Codificar adequadamente para URL
+      const encodedPath = encodeURIComponent(cleanedPath).replace(/%2F/g, '/'); // Mantém as barras
+      
       try {
-        // Tentativa 1: Caminho direto no bucket determinado
-        const { data: directData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+        // Tentativa 1: Caminho direto no bucket determinado com codificação URL
+        const { data: directData } = supabase.storage.from(bucket).getPublicUrl(encodedPath);
         if (directData?.publicUrl) {
           console.log('Redirecionando para URL direta:', directData.publicUrl);
           return NextResponse.redirect(directData.publicUrl);
@@ -48,27 +61,49 @@ export async function GET(request: NextRequest) {
         console.log(`Falha na tentativa de URL direta no bucket ${bucket}:`, err);
       }
       
+      // Se falhar com o caminho codificado, tente com o caminho simples limpo
+      try {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(cleanedPath);
+        if (data?.publicUrl) {
+          console.log('Redirecionando para URL com caminho limpo:', data.publicUrl);
+          return NextResponse.redirect(data.publicUrl);
+        }
+      } catch (err) {
+        console.log(`Falha na tentativa com caminho limpo no bucket ${bucket}:`, err);
+      }
+      
       // Tentativa 2: Adicionar prefixos comuns se não existirem
-      // Usando o mesmo bucket já determinado acima
+      // Usar o caminho limpo para todas as tentativas
+      // Extrair apenas o nome do arquivo para tentativas simplificadas
+      const fileNameOnly = cleanedPath.includes('/') ? 
+        cleanedPath.split('/').pop() : 
+        cleanedPath;
+      
       const possiblePaths = [
-        filePath, // Caminho original
-        filePath.startsWith('/') ? filePath.substring(1) : filePath, // Remover barra inicial se houver
-        filePath.includes('/') ? filePath.split('/').pop() : filePath, // Apenas nome do arquivo
+        // Caminhos simplificados
+        fileNameOnly,
         
-        // Teste com estruturas comuns para cada tipo de bucket
-        bucket === 'certificados' ? `certificados/${filePath}` : null,
-        bucket === 'fisqps' ? `fispqs/${filePath}` : null,
+        // Certificados específicos
+        cleanedPath.toLowerCase().includes('certificado') ? 
+          fileNameOnly?.replace(/^certificado_/, '') : null,
+          
+        // Caminhos com prefixos comuns  
+        bucket === 'certificados' ? `certificados/${fileNameOnly}` : null,
+        bucket === 'fisqps' ? `fisqps/${fileNameOnly}` : null,
         
-        // Certificado específico que está causando erro
-        filePath.includes('Certificado') ? 
-          `${filePath.replace(/^Certificado\s*-\s*/, '')}` : 
-          null
+        // Para certificados especificamente
+        fileNameOnly?.replace(/^certificado_-_/, ''),
+        fileNameOnly?.replace(/^certificado_/, ''),
       ].filter(Boolean); // Remove valores nulos
       
+      // Tente cada caminho possível
       for (const tryPath of possiblePaths) {
         try {
-          console.log(`Tentando caminho alternativo no bucket ${bucket}:`, tryPath);
-          const { data } = supabase.storage.from(bucket).getPublicUrl(tryPath as string);
+          // Codificar corretamente para URL
+          const encodedTryPath = encodeURIComponent(tryPath as string).replace(/%2F/g, '/');
+          
+          console.log(`Tentando caminho alternativo no bucket ${bucket}:`, encodedTryPath);
+          const { data } = supabase.storage.from(bucket).getPublicUrl(encodedTryPath);
           if (data?.publicUrl) {
             console.log('Redirecionando para URL:', data.publicUrl);
             return NextResponse.redirect(data.publicUrl);
