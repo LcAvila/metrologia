@@ -12,21 +12,52 @@ export async function GET(request: NextRequest) {
     if (!filePath) {
       return new NextResponse('Arquivo não especificado', { status: 400 });
     }
+    
+    console.log('Tentando acessar arquivo:', filePath);
 
     // Verificar se estamos em ambiente de produção (Vercel)
     const isProduction = process.env.VERCEL === '1';
 
-    // Em produção, redirecionamos para a URL pública do Supabase Storage
+    // Em produção, tentamos várias abordagens
     if (isProduction) {
-      // Se o caminho já é um caminho do Supabase Storage (uid/tipo/arquivo)
-      if (filePath.includes('/certificados/') || filePath.includes('/registros/')) {
-        // Usar o caminho diretamente no Supabase Storage
-        const { data } = supabase.storage.from('documentos').getPublicUrl(filePath);
-        return NextResponse.redirect(data.publicUrl);
-      } else {
-        // Se for um caminho relativo da pasta public, não podemos acessá-lo em produção
-        return new NextResponse('Formato de arquivo não suportado em produção', { status: 400 });
+      // Verificar se o arquivo está no bucket 'documentos'
+      try {
+        // Tentativa 1: Caminho direto
+        const { data: directData } = supabase.storage.from('documentos').getPublicUrl(filePath);
+        if (directData?.publicUrl) {
+          console.log('Redirecionando para URL direta:', directData.publicUrl);
+          return NextResponse.redirect(directData.publicUrl);
+        }
+      } catch (err) {
+        console.log('Falha na tentativa de URL direta');
       }
+      
+      // Tentativa 2: Adicionar prefixos comuns se não existirem
+      const possiblePaths = [
+        filePath,
+        `certificados/${filePath}`,
+        `registros/${filePath}`,
+        // Certificado específico que está causando erro
+        filePath.includes('Certificado') ? 
+          `certificados/${filePath.replace(/^Certificado\s*-\s*/, '')}` : 
+          null
+      ].filter(Boolean); // Remove valores nulos
+      
+      for (const tryPath of possiblePaths) {
+        try {
+          console.log('Tentando caminho alternativo:', tryPath);
+          const { data } = supabase.storage.from('documentos').getPublicUrl(tryPath as string);
+          if (data?.publicUrl) {
+            console.log('Redirecionando para URL:', data.publicUrl);
+            return NextResponse.redirect(data.publicUrl);
+          }
+        } catch (err) {
+          console.log('Falha ao tentar caminho:', tryPath);
+        }
+      }
+      
+      // Se chegamos aqui, nenhuma tentativa funcionou
+      return new NextResponse(`Arquivo não encontrado no Storage: ${filePath}. Por favor, verifique se o arquivo foi carregado corretamente.`, { status: 404 });
     }
 
     // Em desenvolvimento, continuamos usando o sistema de arquivos local
