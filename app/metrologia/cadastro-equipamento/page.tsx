@@ -102,30 +102,33 @@ function CadastroEquipamentoContent() {
 
   useEffect(() => {
     // Verificar se há um equipamento para edição no localStorage
-    const editingEquipment = localStorage.getItem('editingEquipment');
-    if (editingEquipment) {
-      const parsedEquipment = JSON.parse(editingEquipment);
-      // Garante que todos os campos tenham um valor definido, usando '' como padrão
-      setEquipment(prev => ({
-        ...prev, // Mantém os padrões iniciais
-        ...parsedEquipment, // Sobrescreve com os valores carregados
-        id: parsedEquipment.id ?? '',
-        type: parsedEquipment.type ?? '',
-        sector: parsedEquipment.sector ?? '',
-        status: parsedEquipment.status ?? 'available',
-        lastCalibration: parsedEquipment.lastCalibration ?? '',
-        nextCalibration: parsedEquipment.nextCalibration ?? '',
-        standardLocation: parsedEquipment.standardLocation ?? '',
-        currentLocation: parsedEquipment.currentLocation ?? '',
-        measurementRange: parsedEquipment.measurementRange ?? '',
-        model: parsedEquipment.model ?? '',
-        serialNumber: parsedEquipment.serialNumber ?? '',
-        manufacturer: parsedEquipment.manufacturer ?? '',
-        certificateFile: parsedEquipment.certificateFile ?? '',
-        dataRecordFile: parsedEquipment.dataRecordFile ?? ''
-      }));
-      // Limpar dados de edição após carregar
-      localStorage.removeItem('editingEquipment');
+    // Verificar se estamos no cliente antes de acessar localStorage
+    if (typeof window !== 'undefined') {
+      const editingEquipment = localStorage.getItem('editingEquipment');
+      if (editingEquipment) {
+        const parsedEquipment = JSON.parse(editingEquipment);
+        // Garante que todos os campos tenham um valor definido, usando '' como padrão
+        setEquipment(prev => ({
+          ...prev, // Mantém os padrões iniciais
+          ...parsedEquipment, // Sobrescreve com os valores carregados
+          id: parsedEquipment.id ?? '',
+          type: parsedEquipment.type ?? '',
+          sector: parsedEquipment.sector ?? '',
+          status: parsedEquipment.status ?? 'available',
+          lastCalibration: parsedEquipment.lastCalibration ?? '',
+          nextCalibration: parsedEquipment.nextCalibration ?? '',
+          standardLocation: parsedEquipment.standardLocation ?? '',
+          currentLocation: parsedEquipment.currentLocation ?? '',
+          measurementRange: parsedEquipment.measurementRange ?? '',
+          model: parsedEquipment.model ?? '',
+          serialNumber: parsedEquipment.serialNumber ?? '',
+          manufacturer: parsedEquipment.manufacturer ?? '',
+          certificateFile: parsedEquipment.certificateFile ?? '',
+          dataRecordFile: parsedEquipment.dataRecordFile ?? ''
+        }));
+        // Limpar dados de edição após carregar
+        localStorage.removeItem('editingEquipment');
+      }
     }
   }, []);
 
@@ -135,9 +138,19 @@ function CadastroEquipamentoContent() {
       const prefix = equipmentPrefixes[value] || '';
       if (prefix) {
         let equipments: Equipment[] = [];
-        const storedEquipments = localStorage.getItem('equipments');
-        if (storedEquipments) {
-          equipments = JSON.parse(storedEquipments);
+        // Verificar se estamos no ambiente do cliente
+        if (typeof window !== 'undefined') {
+          const storedEquipments = localStorage.getItem('equipments');
+          if (storedEquipments) {
+            try {
+              const parsed = JSON.parse(storedEquipments);
+              if (Array.isArray(parsed)) {
+                equipments = parsed;
+              }
+            } catch (e) {
+              console.error('Erro ao analisar equipamentos:', e);
+            }
+          }
         }
         const sameTypeEquipments = equipments.filter(eq => eq.id.startsWith(prefix));
         let nextNumber = 1;
@@ -252,9 +265,25 @@ function CadastroEquipamentoContent() {
 
     // Carregar equipamentos existentes
     let equipments: Equipment[] = [];
+    
+    // Verificar se estamos no ambiente do cliente
+    if (typeof window === 'undefined') {
+      showNotification('error', 'Erro ao salvar: ambiente do cliente não disponível');
+      return;
+    }
+    
     const storedEquipments = localStorage.getItem('equipments');
     if (storedEquipments) {
-      equipments = JSON.parse(storedEquipments);
+      try {
+        const parsed = JSON.parse(storedEquipments);
+        if (Array.isArray(parsed)) {
+          equipments = parsed;
+        }
+      } catch (e) {
+        console.error('Erro ao analisar equipamentos:', e);
+        showNotification('error', 'Erro ao processar dados existentes');
+        return;
+      }
     }
 
     // Verificar se o ID já existe
@@ -267,13 +296,16 @@ function CadastroEquipamentoContent() {
       showNotification('success', 'Novo equipamento cadastrado com sucesso!');
     }
 
-    // Salvar no localStorage
-    localStorage.setItem('equipments', JSON.stringify(equipments));
-    
-    // Usar o router do Next.js para navegação sem recarregar a página
-    setTimeout(() => {
+    try {
+      // Salvar equipamentos no localStorage
+      localStorage.setItem('equipments', JSON.stringify(equipments));
+      
+      // Redirecionar para a página de consulta
       router.push('/metrologia');
-    }, 1000); // Pequeno atraso para que o usuário veja a notificação
+    } catch (error) {
+      console.error('Erro ao salvar no localStorage:', error);
+      showNotification('error', 'Ocorreu um erro ao salvar os dados. Tente novamente.');
+    }
   };
 
   const sectionTitleClass = "text-lg font-bold text-[var(--foreground)] mt-3 mb-3 border-b border-[var(--input-border)] pb-2 col-span-1 sm:col-span-2 lg:col-span-3 first:mt-0";
@@ -396,7 +428,7 @@ function CadastroEquipamentoContent() {
           <h3 className={sectionTitleClass}>Localização</h3>
           <div className="flex gap-2 flex-wrap">
             <div className='flex flex-col min-w-[120px] max-w-[160px] flex-1'>
-              <label htmlFor="standardLocation" className="block text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
+              <label htmlFor="standardLocation" className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
                 <span className="mr-1 text-[var(--primary)]"><FaMapMarkerAlt /></span>
                 Local Padrão
               </label>
@@ -411,7 +443,7 @@ function CadastroEquipamentoContent() {
               />
             </div>
             <div className='flex flex-col min-w-[120px] max-w-[160px] flex-1'>
-              <label htmlFor="currentLocation" className="block text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
+              <label htmlFor="currentLocation" className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
                 <span className="mr-1 text-[var(--primary)]"><FaMapMarkerAlt /></span>
                 Localização Atual
               </label>
@@ -431,7 +463,7 @@ function CadastroEquipamentoContent() {
           <h3 className={sectionTitleClass}>Detalhes Técnicos</h3>
           <div className="flex gap-2 flex-wrap">
             <div className='flex flex-col min-w-[120px] max-w-[160px] flex-1'>
-              <label htmlFor="measurementRange" className="block text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
+              <label htmlFor="measurementRange" className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
                 <span className="mr-1 text-[var(--primary)]"><FaRuler /></span>
                 Faixa de Medida
               </label>
@@ -446,7 +478,7 @@ function CadastroEquipamentoContent() {
               />
             </div>
             <div className='flex flex-col min-w-[120px] max-w-[160px] flex-1'>
-              <label htmlFor="model" className="block text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
+              <label htmlFor="model" className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
                 <span className="mr-1 text-[var(--primary)]"><FaCube /></span>
                 Modelo
               </label>
@@ -461,7 +493,7 @@ function CadastroEquipamentoContent() {
               />
             </div>
             <div className='flex flex-col min-w-[120px] max-w-[160px] flex-1'>
-              <label htmlFor="serialNumber" className="block text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
+              <label htmlFor="serialNumber" className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
                 <span className="mr-1 text-[var(--primary)]"><FaBarcode /></span>
                 Número de Série
               </label>
@@ -476,7 +508,7 @@ function CadastroEquipamentoContent() {
               />
             </div>
             <div className='flex flex-col min-w-[120px] max-w-[160px] flex-1'>
-              <label htmlFor="manufacturer" className="block text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
+              <label htmlFor="manufacturer" className="text-xs font-semibold text-[var(--foreground)] mb-1 flex items-center">
                 <span className="mr-1 text-[var(--primary)]"><FaIndustry /></span>
                 Fabricante
               </label>

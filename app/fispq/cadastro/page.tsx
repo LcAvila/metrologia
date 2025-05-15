@@ -137,7 +137,7 @@ export default function CadastroFISPQ() {
                   type="date"
                   required
                   className="w-full px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--input-bg)] text-[var(--input-text)] focus:ring-[var(--primary)] focus:border-[var(--primary)]"
-                  value={formData.validade.toISOString().split('T')[0]}
+                  value={formData.validade instanceof Date ? formData.validade.toISOString().split('T')[0] : typeof formData.validade === 'string' ? formData.validade : new Date().toISOString().split('T')[0]}
                   onChange={e => setFormData({ ...formData, validade: new Date(e.target.value) })}
                 />
               </div>

@@ -70,36 +70,40 @@ CREATE TABLE IF NOT EXISTS "public"."fichas_emergencia" (
 );
 
 -- View para Documentos Públicos (Certificados, FISPQs e Fichas de Emergência)
-CREATE OR REPLACE VIEW "public"."documentos_publicos" AS
+-- Primeiro removemos a view existente
+DROP VIEW IF EXISTS "public"."documentos_publicos";
+
+-- Agora criamos a nova definição
+CREATE VIEW "public"."documentos_publicos" AS
   SELECT 
-    id::text, 
+    "id"::text, 
     'certificado' AS tipo, 
-    equipmentName AS nome, 
-    certificateNumber AS numero, 
-    sector AS setor, 
-    expirationDate::text AS validade, 
-    fileUrl AS arquivoUrl 
-  FROM certificados
+    "equipmentName" AS nome, 
+    "certificateNumber" AS numero, 
+    "sector" AS setor, 
+    "expirationDate"::text AS validade, 
+    "fileUrl" AS arquivoUrl 
+  FROM "public"."certificados"
   UNION ALL
   SELECT 
-    id::text, 
+    "id"::text, 
     'fispq' AS tipo, 
-    produto AS nome, 
-    numeroCas AS numero, 
-    setor, 
-    validade::text, 
-    arquivoUrl 
-  FROM fispqs
+    "produto" AS nome, 
+    "numeroCas" AS numero, 
+    "setor", 
+    "validade"::text, 
+    "arquivoUrl" 
+  FROM "public"."fispqs"
   UNION ALL
   SELECT 
-    id::text, 
+    "id"::text, 
     'emergencia' AS tipo, 
-    produto AS nome, 
+    "produto" AS nome, 
     NULL AS numero, 
-    setor, 
-    dataEmissao::text AS validade, 
-    arquivoUrl 
-  FROM fichas_emergencia;
+    "setor", 
+    "dataEmissao"::text AS validade, 
+    "arquivoUrl" 
+  FROM "public"."fichas_emergencia";
 
 -- Configura RLS (Row Level Security) para todas as tabelas
 -- Ativa RLS para todas as tabelas
@@ -183,8 +187,8 @@ USING (auth.role() = 'authenticated');
 -- Substitua 'admin-user-id' pelo ID do usuário administrador criado no Auth
 INSERT INTO "public"."usuarios" (id, email, nome, tipo_usuario)
 SELECT 
-  '48ac02fe-7b3c-4a94-a148-0b2a03fac6f0', -- Substitua pelo ID real do usuário admin
-  'admin@exemplo.com', -- Substitua pelo email real do usuário admin
+  '1ce76ad3-9577-4a85-b919-043e75024f4f', -- ID do usuário admin existente
+  'admin@exemplo.com', -- Caso precise substituir pelo email real
   'Administrador',
   'admin'
 WHERE NOT EXISTS (
