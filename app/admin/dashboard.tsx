@@ -63,6 +63,7 @@ interface Activity {
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({
     metrologia: { 
       totalCertificados: 0, 
@@ -150,6 +151,19 @@ export default function DashboardPage() {
     setStats(prev => ({...prev, atividades: mockActivities}));
   }, []);
 
+  async function handleLogout() {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function loadStats() {
     try {
       // Aqui implementaria a lógica real para buscar dados do Supabase
@@ -206,19 +220,66 @@ export default function DashboardPage() {
         </div>
         
         <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
+          <button 
+            onClick={() => router.push('/admin/configuracoes')} 
+            className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            title="Configurações"
+          >
             <HiCog className="text-xl text-gray-300" />
           </button>
           
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-semibold">
-              LA
+          <div className="relative">
+            <div 
+              className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-800/50 transition-colors"
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+            >
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-semibold">
+                LA
+              </div>
+              <div className="hidden md:block">
+                <p className="text-sm font-medium">Lucas Ávila</p>
+                <p className="text-xs text-gray-400">Administrador</p>
+              </div>
+              <HiOutlineChevronDown className="text-gray-400" />
             </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-medium">Lucas Ávila</p>
-              <p className="text-xs text-gray-400">Administrador</p>
-            </div>
+            
+            {userMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-2 w-48 z-50">
+                <Link href="/admin/perfil">
+                  <div className="px-4 py-2 hover:bg-gray-700 flex items-center gap-2 transition-colors">
+                    <HiUsers className="text-blue-400" />
+                    <span>Meu Perfil</span>
+                  </div>
+                </Link>
+                <Link href="/admin/configuracoes">
+                  <div className="px-4 py-2 hover:bg-gray-700 flex items-center gap-2 transition-colors">
+                    <HiCog className="text-gray-400" />
+                    <span>Configurações</span>
+                  </div>
+                </Link>
+                <hr className="my-2 border-gray-700" />
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-700 flex items-center gap-2 transition-colors text-red-400"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Sair</span>
+                </button>
+              </div>
+            )}
           </div>
+          
+          <button 
+            onClick={handleLogout}
+            className="md:flex hidden items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Sair</span>
+          </button>
         </div>
       </header>
 

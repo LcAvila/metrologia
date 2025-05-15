@@ -198,19 +198,19 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
               } else if (userType === 'quimico') {
                 linksToShow = fisqpLinks;
               }
-              return linksToShow.map((item, index) => (
+              return linksToShow.map((item) => (
                 item.href ? (
-                  <li key={item.href} style={{ animationDelay: `${index * 100}ms` }}>
+                  <li key={item.href}>
                     <Link 
                       href={item.href} 
-                      className="flex items-center p-2 rounded-lg transition-all duration-200 hover:bg-[var(--sidebar-hover)] hover:shadow-md relative group"
+                      className="flex items-center p-2 rounded-lg hover:bg-[var(--sidebar-hover)] relative group"
                       title={!isExpanded ? item.text : ''}
                     >
                       {item.icon && <i className={`bx ${item.icon} ${isExpanded ? 'mr-2' : 'mx-auto'} text-xl text-[var(--sidebar-text)]`}></i>}
                       {isExpanded ? (
-                        <span className="transition-opacity duration-300">{item.text}</span>
+                        <span>{item.text}</span>
                       ) : (
-                        <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 shadow-md">
+                        <span className="absolute left-full ml-2 bg-[var(--sidebar-bg)] text-[var(--sidebar-text)] px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 shadow-md">
                           {item.text}
                         </span>
                       )}
@@ -231,29 +231,29 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
     >
       {/* Layout para sidebar expandida/recolhida */}
       {isExpanded ? (
-        <div className="flex items-center p-2 rounded-lg">
-          <span className="mr-2 text-sm font-medium">Tema</span>
+        <div onClick={toggleTheme} className="flex items-center p-2 rounded-lg hover:bg-gray-700/20 cursor-pointer">
+          {/* Light icon */}
+          <i className={`bx bx-sun text-xl mr-2 ${theme === 'light' ? 'text-yellow-400' : 'text-gray-400 opacity-60'}`}></i>
           {/* Switch Interruptor */}
           <div className="relative inline-flex items-center cursor-pointer">
             <input 
               type="checkbox" 
               className="sr-only peer" 
               checked={theme === 'dark'}
-              onChange={toggleTheme}
+              onChange={(e) => {
+                e.stopPropagation(); // Evitar duplo trigger
+                toggleTheme();
+              }}
               aria-label="Alternar tema"
             />
             <div className="relative w-8 h-4 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[var(--primary)] scale-90"></div>
           </div>
-          {/* Light/dark icons */}
-          {theme === 'dark' ? (
-            <i className={`bx bx-moon text-xl ml-2 text-[var(--primary)] opacity-100`}></i>
-          ) : (
-            <i className={`bx bx-sun text-xl ml-2 text-yellow-400`}></i>
-          )}
+          {/* Dark icon */}
+          <i className={`bx bx-moon text-xl ml-2 ${theme === 'dark' ? 'text-[var(--primary)] opacity-100' : 'text-gray-400 opacity-60'}`}></i>
         </div>
       ) : (
-        <div className="flex flex-col items-center">
-          <i className="bx bx-sun text-xl text-yellow-400 mb-1"></i>
+        <div onClick={toggleTheme} className="flex flex-col items-center hover:bg-gray-700/20 rounded-lg p-2 cursor-pointer">
+          <i className={`bx bx-sun text-xl ${theme === 'light' ? 'text-yellow-400' : 'text-gray-400 opacity-60'} mb-1`}></i>
           {/* Switch Interruptor */}
           <div className="relative flex items-center my-1">
             <label className="inline-flex items-center cursor-pointer">
@@ -261,14 +261,17 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                 type="checkbox" 
                 className="sr-only peer" 
                 checked={theme === 'dark'}
-                onChange={toggleTheme}
+                onChange={(e) => {
+                  e.stopPropagation(); // Evitar duplo trigger
+                  toggleTheme();
+                }}
                 aria-label="Alternar tema"
               />
               <div className="relative w-8 h-4 bg-[var(--card-bg)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[var(--primary)] scale-90"></div>
             </label>
           </div>
-          {/* Use light/dark variants for moon icon color */}
-          <i className={`bx bx-moon text-xl mt-1 text-[var(--sidebar-text)] opacity-60 dark:text-[var(--primary)] dark:opacity-100`}></i>
+          {/* Dark icon */}
+          <i className={`bx bx-moon text-xl mt-1 ${theme === 'dark' ? 'text-[var(--primary)] opacity-100' : 'text-gray-400 opacity-60'}`}></i>
         </div>
       )}
       

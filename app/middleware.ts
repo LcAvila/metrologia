@@ -66,10 +66,13 @@ export async function middleware(request: NextRequest) {
 
     // Proteger rotas administrativas
     if (path.startsWith('/admin')) {
-      if (userType === 'metrologista' || userType === 'quimico') {
+      if (userType !== 'admin') {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
-      return NextResponse.redirect(new URL('/unauthorized', request.url));
+      // Admin continua normalmente
+      return NextResponse.next({
+        request: { headers: requestHeaders },
+      });
     }
 
     // Metrologista só pode acessar /metrologia e rotas públicas
