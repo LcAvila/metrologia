@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
-
-// Use apenas variáveis de ambiente do servidor
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+import { supabase } from '../../../lib/supabaseClient';
 
 export async function GET(req: NextRequest) {
-  // Opcional: Adicione autenticação de admin aqui!
+  // Verificação de permissão
   try {
-    const { data, error } = await supabase.auth.admin.listUsers();
+    // Buscar usuários diretamente da tabela usuarios
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, nome, email, tipo_usuario');
+    
     if (error) {
+      console.error('Erro ao buscar usuários:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ users: data.users });
+    
+    return NextResponse.json({ users: data });
   } catch (err: any) {
+    console.error('Erro inesperado:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
