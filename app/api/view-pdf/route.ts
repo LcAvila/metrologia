@@ -21,38 +21,60 @@ export async function GET(request: NextRequest) {
     // Em produção, tentamos várias abordagens
     if (isProduction) {
       // Verificar se o arquivo está no bucket 'documentos'
+      // Determinar qual bucket usar com base no caminho do arquivo
+      let bucket = 'certificados'; // Mudando para 'certificados' como bucket padrão
+      
+      // Tentar adivinhar o bucket correto com base no nome do arquivo
+      if (filePath.includes('fispq') || filePath.includes('quimico')) {
+        bucket = 'fisqps';
+      } else if (filePath.includes('certificado') || filePath.includes('metrologista')) {
+        bucket = 'certificados';
+      } else if (filePath.includes('emergencia')) {
+        bucket = 'fichas_emergencia';
+      } else if (filePath.match(/\.(jpg|jpeg|png|gif)$/i)) {
+        bucket = 'fotos';
+      }
+      
+      console.log(`Tentando acessar no bucket: ${bucket}`);
+      
       try {
-        // Tentativa 1: Caminho direto
-        const { data: directData } = supabase.storage.from('documentos').getPublicUrl(filePath);
+        // Tentativa 1: Caminho direto no bucket determinado
+        const { data: directData } = supabase.storage.from(bucket).getPublicUrl(filePath);
         if (directData?.publicUrl) {
           console.log('Redirecionando para URL direta:', directData.publicUrl);
           return NextResponse.redirect(directData.publicUrl);
         }
       } catch (err) {
-        console.log('Falha na tentativa de URL direta');
+        console.log(`Falha na tentativa de URL direta no bucket ${bucket}:`, err);
       }
       
       // Tentativa 2: Adicionar prefixos comuns se não existirem
+      // Usando o mesmo bucket já determinado acima
       const possiblePaths = [
-        filePath,
-        `certificados/${filePath}`,
-        `registros/${filePath}`,
+        filePath, // Caminho original
+        filePath.startsWith('/') ? filePath.substring(1) : filePath, // Remover barra inicial se houver
+        filePath.includes('/') ? filePath.split('/').pop() : filePath, // Apenas nome do arquivo
+        
+        // Teste com estruturas comuns para cada tipo de bucket
+        bucket === 'certificados' ? `certificados/${filePath}` : null,
+        bucket === 'fisqps' ? `fispqs/${filePath}` : null,
+        
         // Certificado específico que está causando erro
         filePath.includes('Certificado') ? 
-          `certificados/${filePath.replace(/^Certificado\s*-\s*/, '')}` : 
+          `${filePath.replace(/^Certificado\s*-\s*/, '')}` : 
           null
       ].filter(Boolean); // Remove valores nulos
       
       for (const tryPath of possiblePaths) {
         try {
-          console.log('Tentando caminho alternativo:', tryPath);
-          const { data } = supabase.storage.from('documentos').getPublicUrl(tryPath as string);
+          console.log(`Tentando caminho alternativo no bucket ${bucket}:`, tryPath);
+          const { data } = supabase.storage.from(bucket).getPublicUrl(tryPath as string);
           if (data?.publicUrl) {
             console.log('Redirecionando para URL:', data.publicUrl);
             return NextResponse.redirect(data.publicUrl);
           }
         } catch (err) {
-          console.log('Falha ao tentar caminho:', tryPath);
+          console.log(`Falha ao tentar caminho ${tryPath} no bucket ${bucket}:`, err);
         }
       }
       
