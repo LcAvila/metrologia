@@ -23,29 +23,49 @@ export const storageService = {
       throw new Error('Arquivo inválido ou vazio.');
     }
 
-    // Gerar nome do arquivo para evitar colisões
-    const timestamp = Date.now();
-    const fileName = `${timestamp}_${file.name}`;
-    
-    // Definir o caminho do arquivo
-    const filePath = pasta 
-      ? `${user.id}/${pasta}/${fileName}`
-      : `${user.id}/${fileName}`;
+    try {
+      // Sanitizar o nome do arquivo para evitar problemas com caracteres especiais
+      const timestamp = Date.now();
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const baseFileName = file.name.split('.').slice(0, -1).join('.');
+      
+      // Remover caracteres especiais, acentos e espaços do nome do arquivo
+      const sanitizedFileName = baseFileName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-zA-Z0-9\-_]/g, '_') // Substitui outros caracteres especiais por _
+        .replace(/_{2,}/g, '_'); // Evita underscores múltiplos
+      
+      // Nome seguro para o arquivo
+      const safeFileName = `${sanitizedFileName}_${timestamp}.${fileExt}`;
+      
+      // Definir o caminho do arquivo
+      const filePath = pasta 
+        ? `${user.id}/${pasta}`
+        : `${user.id}`;
+      
+      const fullPath = `${filePath}/${safeFileName}`;
 
-    // Upload do arquivo
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true // Permite sobrescrever se já existir
-      });
+      console.log('Fazendo upload para caminho:', fullPath);
 
-    if (error) {
-      console.error(`Erro ao fazer upload para ${bucket}:`, error.message || error);
-      throw new Error(error.message || `Erro desconhecido ao fazer upload para ${bucket}`);
+      // Upload do arquivo
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fullPath, file, {
+          cacheControl: '3600',
+          upsert: true // Permite sobrescrever se já existir
+        });
+
+      if (error) {
+        console.error(`Erro ao fazer upload para ${bucket}:`, error.message || error);
+        throw new Error(error.message || `Erro desconhecido ao fazer upload para ${bucket}`);
+      }
+
+      return data.path;
+    } catch (error: any) {
+      console.error(`Erro durante o processamento do upload para ${bucket}:`, error);
+      throw error;
     }
-
-    return data.path;
   },
 
   /**

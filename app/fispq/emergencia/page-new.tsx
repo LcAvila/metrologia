@@ -31,7 +31,6 @@ export default function CadastroFichaEmergencia() {
     produto: '',
     numeroOnu: '',
     classeRisco: '',
-    setor: '',
     validade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Um ano a partir de hoje
     arquivoUrl: '',
     arquivo: null as File | null
@@ -50,20 +49,6 @@ export default function CadastroFichaEmergencia() {
     'Classe 7 - Materiais Radioativos',
     'Classe 8 - Substâncias Corrosivas', 
     'Classe 9 - Substâncias Perigosas Diversas'
-  ];
-  
-  // Lista de setores predefinidos
-  const setores = [
-    'Pesquisa e Desenvolvimento',
-    'Injetoras',
-    'Ferramentaria',
-    'Controle da Qualidade',
-    'Point Matic',
-    'Montagem 1 (M1)',
-    'Montagem 2 (M2)',
-    'Almoxarifado 1 (ALM 1)',
-    'Almoxarifado 2 (ALM 2)',
-    'Depósito de Produtos Acabados (DPA)'
   ];
 
   useEffect(() => {
@@ -133,7 +118,6 @@ export default function CadastroFichaEmergencia() {
         produto: formData.produto,
         numeroOnu: formData.numeroOnu,
         classeRisco: formData.classeRisco,
-        setor: formData.setor,
         validade: formData.validade.toISOString(),
         arquivoUrl: '' // Será preenchido pelo serviço
       }, formData.arquivo as File);
@@ -144,7 +128,6 @@ export default function CadastroFichaEmergencia() {
         produto: '',
         numeroOnu: '',
         classeRisco: '',
-        setor: '',
         validade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         arquivoUrl: '',
         arquivo: null
@@ -345,43 +328,6 @@ export default function CadastroFichaEmergencia() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
-                  <HiOfficeBuilding className="inline mr-1 text-[var(--primary)]" />
-                  Setor*
-                </label>
-                <div className="relative">
-                  <select
-                    name="setor"
-                    value={formData.setor}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-[var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-[var(--input-bg)] text-[var(--text)] appearance-none"
-                    required
-                  >
-                    <option value="">Selecione um setor</option>
-                    {setores.map((setor, index) => (
-                      <option key={index} value={setor}>{setor}</option>
-                    ))}
-                    <option value="outro">Outro (especificar)</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--text-secondary)]">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div>
-                {formData.setor === 'outro' && (
-                  <input
-                    type="text"
-                    name="setorCustom"
-                    placeholder="Especifique o setor"
-                    className="w-full mt-2 px-4 py-2 border border-[var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--primary)] bg-[var(--input-bg)] text-[var(--text)]"
-                    onChange={(e) => setFormData({...formData, setor: e.target.value})}
-                    required
-                  />
-                )}
-              </div>
-              
               <div>
                 <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
                   <HiCalendar className="inline mr-1 text-[var(--primary)]" />

@@ -78,7 +78,7 @@ export default function CadastroFISPQ() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser(session.user);
-        // Verificar se o usuÃ¡rio Ã© quÃ­mico
+        // Verificar se o usuário é químico
         const { data } = await supabase
           .from('usuarios')
           .select('tipo_usuario')
@@ -86,15 +86,15 @@ export default function CadastroFISPQ() {
           .single();
         
         if (data?.tipo_usuario !== 'quimico' && data?.tipo_usuario !== 'admin') {
-          console.warn('UsuÃ¡rio nÃ£o autorizado para Ã¡rea de quÃ­micos');
+          console.warn('Usuário não autorizado para área de químicos');
           router.push('/unauthorized');
         }
       } else {
-        console.warn('UsuÃ¡rio nÃ£o autenticado, redirecionando...');
+        console.warn('Usuário não autenticado, redirecionando...');
         router.push('/login');
       }
     } catch (error) {
-      console.error('Erro ao verificar usuÃ¡rio:', error);
+      console.error('Erro ao verificar usuário:', error);
     }
   }
   
@@ -107,13 +107,13 @@ export default function CadastroFISPQ() {
         .order('setor');
       
       if (data && data.length > 0) {
-        // Obter setores Ãºnicos do banco de dados
+        // Obter setores únicos do banco de dados
         const uniqueSetores = [...new Set(data.map(item => item.setor))].filter(Boolean);
         // Combinar com os setores predefinidos sem duplicar
         const allSetores = [...new Set([...uniqueSetores, ...setoresPredefinidos])].sort();
         setSetores(allSetores);
       } else {
-        // Usar apenas os setores predefinidos se nÃ£o houver dados no banco
+        // Usar apenas os setores predefinidos se não houver dados no banco
         setSetores(setoresPredefinidos);
       }
     } catch (error) {

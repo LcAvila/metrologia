@@ -124,21 +124,23 @@ export const fispqService = {
         }
       }
       
-      // Gerar um nome de arquivo único com timestamp para evitar conflitos
-      const timestamp = new Date().getTime();
-      const fileName = `${fispq.produto.replace(/\s+/g, '_')}_${timestamp}.pdf`;
-      
       // Fazer upload do arquivo usando o serviço unificado
-      const filePath = await storageService.uploadFile(arquivo, bucketName, fileName);
+      // O serviço agora sanitiza automaticamente o nome do arquivo
+      // Não precisamos mais tratar o nome do arquivo aqui
+      const filePath = await storageService.uploadFile(arquivo, bucketName);
       
       // Obter a URL pública do arquivo
       const arquivoUrl = storageService.getPublicUrl(bucketName, filePath);
         
+      // Remover o campo 'arquivo' do objeto fispq, se existir
+      // pois ele não existe na tabela do banco de dados
+      const { arquivo: fileField, ...fispqData } = fispq as any;
+      
       // Salvar os dados no banco de dados
       const { data, error } = await supabase
         .from('fispqs')
         .insert({
-          ...fispq,
+          ...fispqData,
           arquivoUrl,
           criadoEm: new Date().toISOString(),
           // Adicionar user_id para RLS
