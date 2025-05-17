@@ -173,31 +173,22 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
                 { href: '/controle-emissao-certificado', icon: 'bxs-objects-horizontal-left', text: 'Controle de Emissão de Certificado' },
                 { href: '/certificados', icon: 'bxs-report', text: 'Certificados' }
               ];
-              const fisqpLinks = [
-                { href: '/fispq', icon: 'bx-file-blank', text: 'FISQPs' },
-                { href: '/fispq/cadastro', icon: 'bx-plus-circle', text: 'Nova FISQP' },
-                { href: '/fispq/emergencia', icon: 'bx-first-aid', text: 'Ficha de Emergência' }
-              ];
+              // FISPQ usa agora um layout sem sidebar, então não listamos aqui
               const adminLinks = [
                 { href: '/admin', icon: 'bx-grid-alt', text: 'Painel Admin' }
               ];
               let linksToShow: {href: string, icon: string, text: string}[] = [];
-              if (userEmail === 'lucasavila1972@gmail.com') {
-                linksToShow = fisqpLinks;
-              } else if (userType === 'admin') {
+              if (userType === 'admin') {
                 linksToShow = [
                   { href: '', icon: '', text: 'Metrologia' },
                   ...metrologiaLinks,
-                  { href: '', icon: '', text: 'FISQP' },
-                  ...fisqpLinks,
                   { href: '', icon: '', text: 'Administração' },
                   ...adminLinks
                 ];
               } else if (userType === 'metrologista') {
                 linksToShow = metrologiaLinks;
-              } else if (userType === 'quimico') {
-                linksToShow = fisqpLinks;
               }
+              // FISPQ agora usa layout sem sidebar
               return linksToShow.map((item) => (
                 item.href ? (
                   <li key={item.href}>

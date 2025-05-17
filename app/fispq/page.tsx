@@ -6,21 +6,22 @@ import { motion } from 'framer-motion';
 import { 
   HiBeaker, 
   HiDocumentText, 
-  HiShieldExclamation, 
+  HiShieldExclamation,
   HiOutlineChevronDown,
   HiPlus,
-  HiSearch,
-  HiExclamation,
-  HiClipboardCheck,
-  HiCog,
   HiLogout,
-  HiUser
+  HiUser,
+  HiChartBar,
+  HiChevronRight
 } from 'react-icons/hi';
 import { supabase } from '../lib/supabaseClient';
 import { fispqService } from './services/fispqService';
 import { fichaEmergenciaService } from './services/fichaEmergenciaService';
-import { FISPQ } from './types/fispq';
-import { FichaEmergencia } from './types/fichaEmergencia';
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
 
 export default function FISPQPage() {
   const router = useRouter();
@@ -31,18 +32,17 @@ export default function FISPQPage() {
     fispq: {
       total: 0,
       expirando: 0,
-      setores: 0
+      vencidas: 0,
+      validas: 0
     },
     fichaEmergencia: {
       total: 0,
       expirando: 0,
-      classesRisco: 0
+      vencidas: 0,
+      validas: 0
     }
   });
-  const [recentFispqs, setRecentFispqs] = useState<FISPQ[]>([]);
-  const [expiringFispqs, setExpiringFispqs] = useState<FISPQ[]>([]);
-  const [recentFichas, setRecentFichas] = useState<FichaEmergencia[]>([]);
-  
+
   useEffect(() => {
     checkUser();
     loadDashboardData();
@@ -77,126 +77,85 @@ export default function FISPQPage() {
 
   async function loadDashboardData() {
     try {
-      // Carregar estatísticas
-      const fispqStats = await fispqService.getStatistics();
-      const fichaStats = await fichaEmergenciaService.getStatistics();
+      // Buscar estatísticas de FISPQs
+      const allFispqs = await fispqService.list({});
       
-      setStats({
-        fispq: fispqStats,
-        fichaEmergencia: fichaStats
+      let expiringCount = 0;
+      let vencidasCount = 0;
+      let validasCount = 0;
+      const hoje = new Date();
+      const oneMonthFromNow = new Date();
+      oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+      
+      allFispqs.forEach(fispq => {        
+        // Verificar status baseado na validade
+        const validadeDate = new Date(fispq.validade);
+        if (validadeDate < hoje) {
+          vencidasCount++;
+        } else if (validadeDate <= oneMonthFromNow) {
+          expiringCount++;
+        } else {
+          validasCount++;
+        }
       });
-
-      // Carregar FISPQs recentes
-      const fispqs = await fispqService.list();
-      setRecentFispqs(fispqs.slice(0, 5));
       
-      // Filtrar FISPQs expirando
-      const expiringDocs = fispqs.filter(f => f.status === 'expiring');
-      setExpiringFispqs(expiringDocs.slice(0, 5));
+      // Buscar estatísticas de Fichas de Emergência
+      const allFichas = await fichaEmergenciaService.list({});
+      let fichasExpiring = 0;
+      let fichasVencidas = 0;
+      let fichasValidas = 0;
       
-      // Carregar Fichas de Emergência recentes
-      const fichas = await fichaEmergenciaService.list();
-      setRecentFichas(fichas.slice(0, 5));
+      allFichas.forEach(ficha => {        
+        // Verificar status baseado na validade
+        const validadeDate = new Date(ficha.validade);
+        if (validadeDate < hoje) {
+          fichasVencidas++;
+        } else if (validadeDate <= oneMonthFromNow) {
+          fichasExpiring++;
+        } else {
+          fichasValidas++;
+        }
+      });
+      
+      // Atualizar estatísticas
+      setStats({
+        fispq: {
+          total: allFispqs.length,
+          expirando: expiringCount,
+          vencidas: vencidasCount,
+          validas: validasCount
+        },
+        fichaEmergencia: {
+          total: allFichas.length,
+          expirando: fichasExpiring,
+          vencidas: fichasVencidas,
+          validas: fichasValidas
+        }
+      });
+      
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
+    } finally {
+      setLoading(false);
     }
   }
-
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
+  
+  function handleLogout() {
+    supabase.auth.signOut().then(() => {
       router.push('/login');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
+    });
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
-        <div className="w-16 h-16 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
+        <div className="text-white text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Carregando dados...</p>
+        </div>
       </div>
     );
   }
-
-  // Componente de card de estatística
-  const StatCard = ({ title, value, icon: Icon, color }: { title: string; value: number; icon: React.ElementType; color: string }) => (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-${color}/20 shadow-lg`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-gray-400 text-sm font-medium mb-1">{title}</p>
-          <h3 className="text-3xl font-bold text-white">{value}</h3>
-        </div>
-        <div className={`p-3 rounded-full bg-${color}/20 text-${color}`}>
-          <Icon className="text-2xl" />
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  // Componente de card de ação rápida
-  const ActionCard = ({ title, description, icon: Icon, href, color }: { title: string; description: string; icon: React.ElementType; href: string; color: string }) => (
-    <Link href={href}>
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.03, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className={`bg-gray-800/30 hover:bg-${color}/10 backdrop-blur-sm p-6 rounded-xl border border-gray-700 hover:border-${color}/30 shadow-lg cursor-pointer h-full transition-all duration-300`}
-      >
-        <div className={`p-3 rounded-full bg-${color}/20 text-${color} w-fit mb-4`}>
-          <Icon className="text-2xl" />
-        </div>
-        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-gray-400 text-sm">{description}</p>
-      </motion.div>
-    </Link>
-  );
-
-  // Componente de linha para documento (FISPQ ou Ficha de Emergência)
-  const DocumentRow = ({ doc, type }: { doc: any; type: 'fispq' | 'ficha' }) => {
-    const statusColors = {
-      valid: 'text-green-400',
-      expiring: 'text-yellow-400',
-      expired: 'text-red-400'
-    };
-
-    const formatDate = (date: string | Date) => {
-      return new Date(date).toLocaleDateString('pt-BR');
-    };
-
-    return (
-      <div className="border-b border-gray-700 py-3 px-4 hover:bg-gray-800/30 rounded-lg transition-colors">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className={`rounded-full p-2 ${type === 'fispq' ? 'bg-blue-900/30' : 'bg-purple-900/30'}`}>
-              {type === 'fispq' ? <HiBeaker className="text-blue-400" /> : <HiShieldExclamation className="text-purple-400" />}
-            </div>
-            <div>
-              <h4 className="font-medium text-white">{doc.produto || doc.nome}</h4>
-              <p className="text-sm text-gray-400">{doc.fabricante || doc.fornecedor}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className={`text-sm ${statusColors[doc.status || 'valid']}`}>
-              {formatDate(doc.validade)}
-            </span>
-            <Link 
-              href={type === 'fispq' ? `/fispq/editar/${doc.id}` : `/fispq/ficha-emergencia/editar/${doc.id}`}
-              className="text-gray-400 hover:text-blue-400 transition-colors"
-            >
-              <HiCog />
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
@@ -207,7 +166,7 @@ export default function FISPQPage() {
             <HiBeaker className="text-xl" />
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            Painel do Químico
+            Painel FISPQ
           </h1>
         </div>
 
@@ -247,11 +206,11 @@ export default function FISPQPage() {
         {/* Cabeçalho do Dashboard */}
         <div className="mb-8">
           <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={fadeIn.hidden}
+            animate={fadeIn.visible}
             className="text-3xl font-bold text-white mb-2"
           >
-            Dashboard
+            Dashboard FISPQ
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}
@@ -265,125 +224,130 @@ export default function FISPQPage() {
 
         {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <StatCard 
-            title="Total de FISPQs" 
-            value={stats.fispq.total} 
-            icon={HiDocumentText} 
-            color="blue"
-          />
-          <StatCard 
-            title="FISPQs Expirando" 
-            value={stats.fispq.expirando} 
-            icon={HiExclamation} 
-            color="yellow"
-          />
-          <StatCard 
-            title="Fichas de Emergência" 
-            value={stats.fichaEmergencia.total} 
-            icon={HiShieldExclamation} 
-            color="purple"
-          />
-          <StatCard 
-            title="Setores" 
-            value={stats.fispq.setores} 
-            icon={HiBeaker} 
-            color="green"
-          />
-        </div>
-
-        {/* Ações Rápidas */}
-        <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-800 pb-2">Ações Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <ActionCard 
-            title="Nova FISPQ" 
-            description="Cadastre uma nova ficha de informação de segurança de produto químico" 
-            icon={HiPlus} 
-            href="/fispq/cadastro" 
-            color="blue"
-          />
-          <ActionCard 
-            title="Nova Ficha de Emergência" 
-            description="Adicione uma nova ficha de emergência para transporte" 
-            icon={HiPlus} 
-            href="/fispq/emergencia" 
-            color="purple"
-          />
-          <ActionCard 
-            title="Buscar Documentos" 
-            description="Procure por documentos cadastrados no sistema" 
-            icon={HiSearch} 
-            href="/fispq/fisqps" 
-            color="green"
-          />
-        </div>
-
-        {/* Documentos Recentes e Expirando */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* FISPQs Recentes */}
-          <div>
-            <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
-              <h2 className="text-xl font-bold text-white">FISPQs Recentes</h2>
-              <Link href="/fispq/fisqps" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-                Ver todas
-              </Link>
-            </div>
-            <div className="bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden">
-              {recentFispqs.length > 0 ? (
-                <div>
-                  {recentFispqs.map((fispq) => (
-                    <DocumentRow key={fispq.id} doc={fispq} type="fispq" />
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 text-center text-gray-400">
-                  Nenhuma FISPQ cadastrada ainda
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Documentos Expirando */}
-          <div>
-            <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
-              <h2 className="text-xl font-bold text-white">Documentos Expirando</h2>
-            </div>
-            <div className="bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden">
-              {expiringFispqs.length > 0 ? (
-                <div>
-                  {expiringFispqs.map((fispq) => (
-                    <DocumentRow key={fispq.id} doc={fispq} type="fispq" />
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 text-center text-gray-400">
-                  Nenhum documento expirando nos próximos 30 dias
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Fichas de Emergência Recentes */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
-            <h2 className="text-xl font-bold text-white">Fichas de Emergência Recentes</h2>
-            <Link href="/fispq/ficha-emergencia" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-              Ver todas
-            </Link>
-          </div>
-          <div className="bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden">
-            {recentFichas.length > 0 ? (
-              <div>
-                {recentFichas.map((ficha) => (
-                  <DocumentRow key={ficha.id} doc={ficha} type="ficha" />
-                ))}
+          <motion.div 
+            initial={fadeIn.hidden}
+            animate={fadeIn.visible}
+            transition={{ delay: 0.1 }}
+            className="bg-blue-900/20 border border-blue-900/50 rounded-xl p-5 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-blue-300">FISPQs</h3>
+              <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-300">
+                <HiDocumentText className="text-xl" />
               </div>
-            ) : (
-              <div className="p-4 text-center text-gray-400">
-                Nenhuma ficha de emergência cadastrada ainda
+            </div>
+            <div className="flex items-end justify-between">
+              <p className="text-3xl font-bold text-white">{stats.fispq.total}</p>
+              <div className="text-sm text-right">
+                <p className="text-green-400">{stats.fispq.validas} válidas</p>
+                <p className="text-yellow-400">{stats.fispq.expirando} expirando</p>
+                <p className="text-red-400">{stats.fispq.vencidas} vencidas</p>
               </div>
-            )}
-          </div>
+            </div>
+          </motion.div>
+            
+          <motion.div 
+            initial={fadeIn.hidden}
+            animate={fadeIn.visible}
+            transition={{ delay: 0.2 }}
+            className="bg-purple-900/20 border border-purple-900/50 rounded-xl p-5 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-purple-300">Fichas de Emergência</h3>
+              <div className="w-10 h-10 rounded-full bg-purple-900/50 flex items-center justify-center text-purple-300">
+                <HiShieldExclamation className="text-xl" />
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <p className="text-3xl font-bold text-white">{stats.fichaEmergencia.total}</p>
+              <div className="text-sm text-right">
+                <p className="text-green-400">{stats.fichaEmergencia.validas} válidas</p>
+                <p className="text-yellow-400">{stats.fichaEmergencia.expirando} expirando</p>
+                <p className="text-red-400">{stats.fichaEmergencia.vencidas} vencidas</p>
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div 
+            initial={fadeIn.hidden}
+            animate={fadeIn.visible}
+            transition={{ delay: 0.3 }}
+            className="bg-indigo-900/20 border border-indigo-900/50 rounded-xl p-5 flex flex-col lg:col-span-2"
+          >
+            <div className="flex items-center mb-3">
+              <h3 className="text-lg font-medium text-indigo-300 mr-2">Status Geral</h3>
+              <div className="w-8 h-8 rounded-full bg-indigo-900/50 flex items-center justify-center text-indigo-300">
+                <HiChartBar className="text-lg" />
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-between gap-4">
+              <div className="flex-1 bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-green-400 text-lg font-bold">{stats.fispq.validas + stats.fichaEmergencia.validas}</p>
+                <p className="text-xs text-gray-400">Documentos Válidos</p>
+              </div>
+              <div className="flex-1 bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-yellow-400 text-lg font-bold">{stats.fispq.expirando + stats.fichaEmergencia.expirando}</p>
+                <p className="text-xs text-gray-400">Expirando</p>
+              </div>
+              <div className="flex-1 bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-red-400 text-lg font-bold">{stats.fispq.vencidas + stats.fichaEmergencia.vencidas}</p>
+                <p className="text-xs text-gray-400">Vencidos</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Cards de navegação */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <Link href="/fispq/fisqps">
+            <motion.div 
+              initial={fadeIn.hidden}
+              animate={fadeIn.visible}
+              transition={{ delay: 0.4 }}
+              className="bg-gray-800/50 hover:bg-gray-800/70 border border-gray-700 hover:border-blue-700/50 rounded-xl p-6 transition-all cursor-pointer group h-full"
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-3 bg-blue-900/30 rounded-lg">
+                  <HiDocumentText className="text-3xl text-blue-400" />
+                </div>
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-900/30 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <HiChevronRight />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">Gerenciar FISPQs</h3>
+              <p className="text-gray-400 mb-4">Cadastre, consulte, edite ou exclua fichas de segurança de produtos químicos</p>
+              <div className="flex items-center text-sm text-blue-400 font-medium">
+                <span>Acessar módulo</span>
+                <HiChevronRight className="ml-1 transform group-hover:translate-x-1 transition-transform" />
+              </div>
+            </motion.div>
+          </Link>
+          
+          <Link href="/fispq/emergencia">
+            <motion.div 
+              initial={fadeIn.hidden}
+              animate={fadeIn.visible}
+              transition={{ delay: 0.5 }}
+              className="bg-gray-800/50 hover:bg-gray-800/70 border border-gray-700 hover:border-purple-700/50 rounded-xl p-6 transition-all cursor-pointer group h-full"
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-3 bg-purple-900/30 rounded-lg">
+                  <HiShieldExclamation className="text-3xl text-purple-400" />
+                </div>
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-900/30 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <HiChevronRight />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">Fichas de Emergência</h3>
+              <p className="text-gray-400 mb-4">Gerencie as fichas para transporte de produtos perigosos</p>
+              <div className="flex items-center text-sm text-purple-400 font-medium">
+                <span>Acessar módulo</span>
+                <HiChevronRight className="ml-1 transform group-hover:translate-x-1 transition-transform" />
+              </div>
+            </motion.div>
+          </Link>
         </div>
       </main>
     </div>

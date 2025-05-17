@@ -9,7 +9,7 @@ import { TextField, Button, MenuItem, CircularProgress, IconButton } from "@mui/
 import DatePicker from "../../components/DatePicker";
 import InputFileUpload from "../../components/InputFileUpload";
 import VisualizarPdf from "../../components/VisualizarPdf";
-import { HiDocumentAdd, HiSearch, HiChevronLeft, HiDownload, HiFilter, HiX, HiViewList, HiPlus, HiUpload } from "react-icons/hi";
+import { HiDocumentAdd, HiSearch, HiChevronLeft, HiDownload, HiFilter, HiX, HiViewList, HiPlus, HiUpload, HiPencil, HiTrash } from "react-icons/hi";
 
 const setores = ["Laboratório", "Produção", "Qualidade", "Segurança", "Outros"];
 const tiposRisco = ["Inflamável", "Tóxico", "Corrosivo", "Explosivo", "Outros"];
@@ -39,6 +39,13 @@ export default function FispqsPage() {
   // Estado de visualização
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState<"cadastro" | "consulta">("consulta");
+  
+  // Estados para edição e exclusão
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteItemName, setDeleteItemName] = useState('');
 
   // Buscar FISPQs
   const fetchFispqs = async () => {
@@ -112,6 +119,14 @@ export default function FispqsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Se estiver no modo de edição, chamar a função de atualização
+    if (isEditing && editingId) {
+      await handleUpdate(e);
+      return;
+    }
+    
+    // Se não estiver no modo de edição, continuar com a criação
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -164,6 +179,138 @@ export default function FispqsPage() {
     setActiveTab(tab);
     if (tab === "consulta") {
       fetchFispqs();
+    }
+    // Limpar modo de edição ao trocar de aba
+    if (isEditing) {
+      setIsEditing(false);
+      setEditingId(null);
+      clearForm();
+    }
+  };
+  
+  // Funções para manipular edição
+  const startEdit = async (id: string) => {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    
+    try {
+      const fispq = await fispqService.getById(id);
+      if (fispq) {
+        setForm({
+          produto: fispq.produto,
+          fabricante: fispq.fabricante,
+          numeroCas: fispq.numeroCas,
+          setor: fispq.setor,
+          tipoRisco: fispq.tipoRisco,
+          validade: typeof fispq.validade === 'string' 
+            ? fispq.validade.substring(0, 10) 
+            : new Date(fispq.validade).toISOString().substring(0, 10)
+        });
+        setEditingId(id);
+        setIsEditing(true);
+        setActiveTab("cadastro");
+      } else {
+        setError("FISPQ não encontrada");
+      }
+    } catch (e: any) {
+      setError(`Erro ao carregar dados para edição: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    clearForm();
+  };
+  
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      if (!form.produto || !form.fabricante || !form.setor || !form.validade) {
+        setError("Preencha todos os campos obrigatórios.");
+        setLoading(false);
+        return;
+      }
+      
+      if (!editingId) {
+        setError("ID de edição não encontrado");
+        setLoading(false);
+        return;
+      }
+      
+      await fispqService.update(
+        editingId,
+        {
+          produto: form.produto,
+          fabricante: form.fabricante,
+          numeroCas: form.numeroCas,
+          setor: form.setor,
+          tipoRisco: form.tipoRisco,
+          validade: new Date(form.validade!),
+        },
+        form.arquivo || undefined
+      );
+      
+      setSuccess("FISPQ atualizada com sucesso!");
+      setForm({});
+      setFilePreview(null);
+      setIsEditing(false);
+      setEditingId(null);
+      
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
+        setActiveTab("consulta");
+        fetchFispqs();
+        setSuccess(null);
+      }, 2000);
+    } catch (e: any) {
+      setError(`Erro ao atualizar: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Funções para manipular exclusão
+  const startDelete = (id: string, nome: string) => {
+    setDeleteId(id);
+    setDeleteItemName(nome);
+    setShowDeleteModal(true);
+  };
+  
+  const cancelDelete = () => {
+    setDeleteId(null);
+    setDeleteItemName('');
+    setShowDeleteModal(false);
+  };
+  
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await fispqService.delete(deleteId);
+      setSuccess("FISPQ excluída com sucesso!");
+      fetchFispqs();
+      cancelDelete();
+      
+      // Limpar mensagem de sucesso após 3 segundos
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (e: any) {
+      setError(`Erro ao excluir: ${e.message}`);
+      cancelDelete();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -234,14 +381,37 @@ export default function FispqsPage() {
               className="flex flex-col space-y-6"
             >
               {/* Cabeçalho do formulário */}
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-blue-600/20 rounded-xl">
-                  <HiDocumentAdd className="text-3xl text-blue-400" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-blue-600/20 rounded-xl">
+                    {isEditing ? (
+                      <HiPencil className="text-3xl text-blue-400" />
+                    ) : (
+                      <HiDocumentAdd className="text-3xl text-blue-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">
+                      {isEditing ? 'Editar FISPQ' : 'Cadastro de FISPQ'}
+                    </h1>
+                    <p className="text-gray-400">
+                      {isEditing 
+                        ? `Editando: ${form.produto || ''}` 
+                        : 'Preencha os dados para cadastrar uma nova FISPQ'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white">Cadastro de FISPQ</h1>
-                  <p className="text-gray-400">Preencha os dados para cadastrar uma nova FISPQ</p>
-                </div>
+                
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg flex items-center space-x-2"
+                  >
+                    <HiX className="text-lg" />
+                    <span>Cancelar edição</span>
+                  </button>
+                )}
               </div>
               
               {/* Formulário de cadastro com novo estilo */}
@@ -387,15 +557,15 @@ export default function FispqsPage() {
                   <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-700">
                     <button
                       type="button"
-                      onClick={clearForm}
+                      onClick={isEditing ? cancelEdit : clearForm}
                       className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
                     >
-                      Limpar
+                      {isEditing ? 'Cancelar' : 'Limpar'}
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-medium transition-colors flex items-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                      className={`px-6 py-2 rounded-lg text-white font-medium transition-colors flex items-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed ${isEditing ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'}`}
                     >
                       {loading ? (
                         <>
@@ -404,6 +574,11 @@ export default function FispqsPage() {
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                           <span>Processando...</span>
+                        </>
+                      ) : isEditing ? (
+                        <>
+                          <HiPencil className="text-lg" />
+                          <span>Atualizar FISPQ</span>
                         </>
                       ) : (
                         <>
@@ -544,6 +719,7 @@ export default function FispqsPage() {
                             <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tipo de Risco</th>
                             <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Validade</th>
                             <th className="p-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">PDF</th>
+                            <th className="p-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Ações</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
@@ -582,6 +758,24 @@ export default function FispqsPage() {
                                   </a>
                                 ) : '-'}
                               </td>
+                              <td className="p-4 whitespace-nowrap">
+                                <div className="flex items-center justify-center space-x-2">
+                                  <button
+                                    onClick={() => startEdit(f.id)}
+                                    className="p-2 rounded-full bg-green-900/30 text-green-400 hover:bg-green-900/50 transition-colors"
+                                    title="Editar FISPQ"
+                                  >
+                                    <HiPencil className="text-lg" />
+                                  </button>
+                                  <button
+                                    onClick={() => startDelete(f.id, f.produto)}
+                                    className="p-2 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors"
+                                    title="Excluir FISPQ"
+                                  >
+                                    <HiTrash className="text-lg" />
+                                  </button>
+                                </div>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -594,6 +788,54 @@ export default function FispqsPage() {
           )}
         </div>
       </div>
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div 
+            className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center space-x-4 mb-5">
+              <div className="p-3 bg-red-900/30 rounded-full">
+                <HiTrash className="text-2xl text-red-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Confirmar exclusão</h3>
+            </div>
+            
+            <p className="text-gray-300 mb-2">Tem certeza que deseja excluir a FISPQ:</p>
+            <p className="text-white font-medium mb-6 p-2 bg-gray-700/50 rounded border border-gray-600">{deleteItemName}</p>
+            
+            <div className="border-t border-gray-700 pt-5 flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center space-x-2"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Processando...</span>
+                  </>
+                ) : (
+                  <>
+                    <HiTrash className="text-lg" />
+                    <span>Excluir</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
