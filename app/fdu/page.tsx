@@ -28,6 +28,7 @@ export default function FDUPage() {
   const [user, setUser] = useState<any>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
     fdu: {
       total: 0,
@@ -51,25 +52,27 @@ export default function FDUPage() {
   async function checkUser() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-        // Verificar se o usuário é químico
-        const { data } = await supabase
-          .from('usuarios')
-          .select('tipo_usuario')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (data?.tipo_usuario !== 'quimico' && data?.tipo_usuario !== 'admin') {
-          console.warn('Usuário não autorizado para área de químicos');
-          router.push('/unauthorized');
-        }
-      } else {
-        console.warn('Usuário não autenticado, redirecionando...');
+      
+      if (!session) {
         router.push('/login');
+        return;
+      }
+      
+      setUser(session.user);
+      
+      // Verificar se o usuário é administrador
+      const { data: userRoleData, error: userRoleError } = await supabase
+        .from('usuarios')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (!userRoleError && userRoleData) {
+        setIsAdmin(userRoleData.role === 'admin');
       }
     } catch (error) {
       console.error('Erro ao verificar usuário:', error);
+      router.push('/login');
     } finally {
       setLoading(false);
     }
@@ -158,9 +161,27 @@ export default function FDUPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+    <div className="bg-gray-900 min-h-screen text-white">
+      {/* Botão flutuante para voltar ao painel (apenas para admin) */}
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-30">
+          <motion.button
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.05 }}
+            onClick={() => router.push('/admin/dashboard')}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 rounded-full py-3 px-5 text-white shadow-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            <span>Voltar ao Painel</span>
+          </motion.button>
+        </div>
+      )}
+      
       {/* Header */}
-      <header className="sticky top-0 z-30 w-full py-4 px-6 md:px-10 bg-black/40 backdrop-blur-sm border-b border-gray-800 flex justify-between items-center shadow-lg">
+      <header className="sticky top-0 z-10 backdrop-blur-lg bg-gray-900/80 border-b border-gray-800 px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
             <HiBeaker className="text-xl" />

@@ -11,8 +11,45 @@ import InputFileUpload from "../../components/InputFileUpload";
 import VisualizarPdf from "../../components/VisualizarPdf";
 import { HiDocumentAdd, HiSearch, HiChevronLeft, HiDownload, HiFilter, HiX, HiViewList, HiPlus, HiUpload, HiPencil, HiTrash } from "react-icons/hi";
 
-const setores = ["Laboratório", "Produção", "Qualidade", "Segurança", "Outros"];
-const tiposRisco = ["Inflamável", "Tóxico", "Corrosivo", "Explosivo", "Outros"];
+// Setores baseados na planilha de controle
+const setores = [
+  "Tintas", 
+  "Point Matic", 
+  "Controle da Qualidade", 
+  "Montagem 1", 
+  "Montagem 2", 
+  "Injetoras", 
+  "Cola", 
+  "CRR", 
+  "TMG", 
+  "Ferramentaria", 
+  "Manutenção Industrial", 
+  "PeD", 
+  "Almoxarifado",
+  "Outros"
+];
+
+// Classes de risco baseadas na planilha
+const tiposRisco = [
+  "Líquido inflamável 3", 
+  "Líquido corrosivo 8", 
+  "Sólido inflamável 4.1", 
+  "Tóxico 6", 
+  "Oxidante 5.1", 
+  "Gás inflamável 2", 
+  "N.A", 
+  "Outros"
+];
+
+// Locais de armazenamento
+const locaisArmazenamento = [
+  "Almoxarifado", 
+  "Laboratório", 
+  "Área de produção", 
+  "Depósito químico", 
+  "Galpão de tintas", 
+  "Outros"
+];
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -46,6 +83,8 @@ export default function FdusPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteItemName, setDeleteItemName] = useState('');
+  const [selectedFdu, setSelectedFdu] = useState<FDU | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // Buscar FDUs
   const fetchFdus = async () => {
@@ -88,6 +127,11 @@ export default function FdusPage() {
       if (file.type !== 'application/pdf') {
         setError('Por favor, selecione apenas arquivos PDF.');
         return;
+      }
+      
+      // Se o nome do arquivo contiver "FISPQ" ou "FDS", marcar possuiFispq como true
+      if (file.name.toUpperCase().includes("FISPQ") || file.name.toUpperCase().includes("FDS")) {
+        setForm({ ...form, possuiFispq: true });
       }
       
       // Verificar tamanho (máx. 10MB)
@@ -137,6 +181,11 @@ export default function FdusPage() {
         setError("Preencha todos os campos obrigatórios.");
         setLoading(false);
         return;
+      }
+      
+      // Se possuiFispq não estiver definido, definir como false
+      if (form.possuiFispq === undefined) {
+        form.possuiFispq = false;
       }
       
       if (isEditing && editingId) {
@@ -408,7 +457,7 @@ export default function FdusPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Produto</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Produto (Nome Comercial)</label>
                         <input
                           type="text"
                           name="produto"
@@ -416,6 +465,19 @@ export default function FdusPage() {
                           onChange={handleChange}
                           className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
+                        />
+                      </div>
+      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Nome Técnico/Substância <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="nomeTecnico"
+                          value={form.nomeTecnico || ''}
+                          onChange={handleChange}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
       
@@ -447,7 +509,7 @@ export default function FdusPage() {
                     
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Setor</label>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Setor (Local de Utilização)</label>
                         <select
                           name="setor"
                           value={form.setor || ''}
@@ -462,11 +524,26 @@ export default function FdusPage() {
       
                       <div>
                         <label className="block text-sm font-medium mb-2 text-gray-300">
-                          Tipo de Risco <span className="text-xs text-gray-400">(opcional)</span>
+                          Local de Armazenamento <span className="text-xs text-gray-400">(opcional)</span>
                         </label>
                         <select
-                          name="tipoRisco"
-                          value={form.tipoRisco || ''}
+                          name="localArmazenamento"
+                          value={form.localArmazenamento || ''}
+                          onChange={handleChange}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Selecione</option>
+                          {locaisArmazenamento.map((l) => <option key={l} value={l}>{l}</option>)}
+                        </select>
+                      </div>
+      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Classe de Risco <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <select
+                          name="classeRisco"
+                          value={form.classeRisco || ''}
                           onChange={handleChange}
                           className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
@@ -484,6 +561,120 @@ export default function FdusPage() {
                           onChange={(e) => handleDateChange(e.target.value)}
                           className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Campos adicionais - nova seção baseada na planilha */}
+                  <div className="mt-6 border-t border-gray-700 pt-6">
+                    <h3 className="text-lg font-medium text-gray-200 mb-4">Informações adicionais de segurança</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Classificação GHS <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <textarea
+                          name="classificacaoGHS"
+                          value={form.classificacaoGHS || ''}
+                          onChange={handleChange}
+                          rows={3}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Ex: Toxicidade aguda (Oral) Categoria 4, Corrosão/irritação à pele Categoria 2"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Tipo de Risco Adicional <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <select
+                          name="tipoRisco"
+                          value={form.tipoRisco || ''}
+                          onChange={handleChange}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Nenhum</option>
+                          <option value="Inflamável">Inflamável</option>
+                          <option value="Tóxico">Tóxico</option>
+                          <option value="Corrosivo">Corrosivo</option>
+                          <option value="Explosivo">Explosivo</option>
+                          <option value="Oxidante">Oxidante</option>
+                          <option value="Reativo com água">Reativo com água</option>
+                          <option value="Outros">Outros</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          EPI Necessário <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <textarea
+                          name="epiNecessario"
+                          value={form.epiNecessario || ''}
+                          onChange={handleChange}
+                          rows={2}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Ex: Óculos de segurança, luvas de nitrila, máscara respiratória"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Possui FISPQ? <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="possuiFispq"
+                              checked={form.possuiFispq === true}
+                              onChange={() => setForm({ ...form, possuiFispq: true })}
+                              className="form-radio h-4 w-4 text-blue-600 border-gray-600 bg-gray-700 focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="ml-2 text-gray-300">Sim</span>
+                          </label>
+                          <label className="inline-flex items-center">
+                            <input
+                              type="radio"
+                              name="possuiFispq"
+                              checked={form.possuiFispq === false}
+                              onChange={() => setForm({ ...form, possuiFispq: false })}
+                              className="form-radio h-4 w-4 text-blue-600 border-gray-600 bg-gray-700 focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="ml-2 text-gray-300">Não</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Medidas Preventivas <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <textarea
+                          name="medidasPreventivas"
+                          value={form.medidasPreventivas || ''}
+                          onChange={handleChange}
+                          rows={3}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Ex: Usar em áreas bem ventiladas, longe de fontes de ignição"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">
+                          Destinação do Produto <span className="text-xs text-gray-400">(opcional)</span>
+                        </label>
+                        <textarea
+                          name="destinacaoProduto"
+                          value={form.destinacaoProduto || ''}
+                          onChange={handleChange}
+                          rows={3}
+                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Ex: Seguir leis e regulamentos locais, estaduais/municipais e federais para descarte"
                         />
                       </div>
                     </div>
@@ -696,56 +887,41 @@ export default function FdusPage() {
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="min-w-full">
+                      <table className="min-w-full table-fixed">
                         <thead>
                           <tr className="border-b border-gray-700 bg-gray-800/80">
-                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Produto</th>
-                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Fabricante</th>
-                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">CAS</th>
-                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Setor</th>
-                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tipo de Risco</th>
-                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Validade</th>
-                            <th className="p-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">PDF</th>
+                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[120px]">Produto</th>
+                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[120px]">Fabricante</th>
+                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[120px]">CAS</th>
+                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[120px]">Setor</th>
+                            <th className="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[120px]">Tipo de Risco</th>
                             <th className="p-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Ações</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
                           {fdus.map((fdu) => (
-                            <tr key={fdu.id} className="hover:bg-gray-700/40 transition-colors">
-                              <td className="p-4 whitespace-nowrap">
+                            <tr key={fdu.id} className="hover:bg-gray-700/40 transition-colors cursor-pointer" onClick={() => {
+                              setSelectedFdu(fdu);
+                              setShowDetailsModal(true);
+                            }}>
+                              <td className="p-4 whitespace-normal break-words">
                                 <div className="font-medium text-white">{fdu.produto}</div>
                               </td>
-                              <td className="p-4 whitespace-nowrap text-gray-300">{fdu.fabricante}</td>
-                              <td className="p-4 whitespace-nowrap text-gray-300">{fdu.numeroCas || '-'}</td>
-                              <td className="p-4 whitespace-nowrap">
+                              <td className="p-4 whitespace-normal break-words text-gray-300">{fdu.fabricante}</td>
+                              <td className="p-4 whitespace-normal break-words text-gray-300">{fdu.numeroCas || '-'}</td>
+                              <td className="p-4 whitespace-normal break-words">
                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-900/30 text-blue-300">
                                   {fdu.setor}
                                 </span>
                               </td>
-                              <td className="p-4 whitespace-nowrap">
+                              <td className="p-4 whitespace-normal break-words">
                                 {fdu.tipoRisco ? (
                                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900/30 text-yellow-300">
                                     {fdu.tipoRisco}
                                   </span>
                                 ) : '-'}
                               </td>
-                              <td className="p-4 whitespace-nowrap text-gray-300">
-                                {new Date(fdu.validade).toLocaleDateString()}
-                              </td>
-                              <td className="p-4 whitespace-nowrap text-center">
-                                {fdu.arquivoUrl ? (
-                                  <a 
-                                    href={fdu.arquivoUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center p-2 rounded-full bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 transition-colors"
-                                    title="Baixar PDF"
-                                  >
-                                    <HiDownload className="text-xl" />
-                                  </a>
-                                ) : '-'}
-                              </td>
-                              <td className="p-4 whitespace-nowrap">
+                              <td className="p-4 whitespace-normal break-words">
                                 <div className="flex items-center justify-center space-x-2">
                                   <button
                                     onClick={() => startEdit(fdu.id)}
@@ -775,6 +951,136 @@ export default function FdusPage() {
           )}
         </div>
       </div>
+      {/* Modal de detalhes da FDU */}
+      {showDetailsModal && selectedFdu && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={() => setShowDetailsModal(false)}>
+          <div 
+            className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-blue-900/30 rounded-full">
+                  <HiDocumentAdd className="text-2xl text-blue-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Detalhes da FDU</h3>
+              </div>
+              <button 
+                onClick={() => setShowDetailsModal(false)}
+                className="p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <HiX className="text-xl" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-medium text-blue-400 mb-2">Informações Básicas</h4>
+                  <div className="space-y-4 bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                    <div>
+                      <p className="text-sm text-gray-400">Produto</p>
+                      <p className="text-white font-medium">{selectedFdu.produto}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Fabricante</p>
+                      <p className="text-white">{selectedFdu.fabricante}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Nome Técnico</p>
+                      <p className="text-white">{selectedFdu.nomeTecnico || 'Não informado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Número CAS</p>
+                      <p className="text-white">{selectedFdu.numeroCas || 'Não informado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Setor</p>
+                      <p className="text-white">{selectedFdu.setor}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Local de Armazenamento</p>
+                      <p className="text-white">{selectedFdu.localArmazenamento || 'Não especificado'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-medium text-yellow-400 mb-2">Informações de Risco</h4>
+                  <div className="space-y-4 bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                    <div>
+                      <p className="text-sm text-gray-400">Classe de Risco</p>
+                      <p className="text-white">{selectedFdu.classeRisco || 'Não classificado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Tipo de Risco</p>
+                      <p className="text-white">{selectedFdu.tipoRisco || 'Não classificado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Classificação GHS</p>
+                      <p className="text-white">{selectedFdu.classificacaoGHS || 'Não informado'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-medium text-green-400 mb-2">Medidas de Segurança</h4>
+                  <div className="space-y-4 bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                    <div>
+                      <p className="text-sm text-gray-400">EPI Necessário</p>
+                      <p className="text-white whitespace-pre-line">{selectedFdu.epiNecessario || 'Não informado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Medidas Preventivas</p>
+                      <p className="text-white whitespace-pre-line">{selectedFdu.medidasPreventivas || 'Não informado'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-medium text-purple-400 mb-2">Informações Adicionais</h4>
+                  <div className="space-y-4 bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                    <div>
+                      <p className="text-sm text-gray-400">Destinação do Produto</p>
+                      <p className="text-white whitespace-pre-line">{selectedFdu.destinacaoProduto || 'Não informado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Possui FISPQ</p>
+                      <p className="text-white">{selectedFdu.possuiFispq ? 'Sim' : 'Não'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Data de Cadastro</p>
+                      <p className="text-white">{new Date(selectedFdu.criadoEm).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-700 mt-6 pt-5 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  startEdit(selectedFdu.id);
+                }}
+                className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <HiPencil className="text-lg" />
+                <span>Editar FDU</span>
+              </button>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de confirmação de exclusão */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">

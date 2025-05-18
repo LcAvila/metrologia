@@ -35,9 +35,9 @@ interface Stats {
     equipamentosVencidos: number;
     proximasCalibracoes: number;
   };
-  fispq: {
-    totalFispqs: number;
-    fispqsExpirando: number;
+  fdu: {
+    totalFdus: number;
+    fdusExpirando: number;
     setores: number;
     fichasEmergencia: number;
   };
@@ -72,9 +72,9 @@ export default function DashboardPage() {
       equipamentosVencidos: 0,
       proximasCalibracoes: 0
     },
-    fispq: { 
-      totalFispqs: 0, 
-      fispqsExpirando: 0, 
+    fdu: { 
+      totalFdus: 0, 
+      fdusExpirando: 0, 
       setores: 0,
       fichasEmergencia: 0
     },
@@ -95,11 +95,11 @@ export default function DashboardPage() {
     { id: '3', nome: 'Calibração Paquímetro Digital', data: '2025-06-22', tipo: 'Certificado' }
   ]);
   
-  const [expirandoFispqs] = useState([
-    { id: '1', nome: 'FISPQ Acetona PA', data: '2025-06-05', tipo: 'FISPQ' },
-    { id: '2', nome: 'FISPQ Álcool Etílico 70%', data: '2025-06-12', tipo: 'FISPQ' },
-    { id: '3', nome: 'FISPQ Ácido Clorídrico', data: '2025-06-18', tipo: 'FISPQ' },
-    { id: '4', nome: 'FISPQ Hipoclorito de Sódio', data: '2025-06-24', tipo: 'FISPQ' }
+  const [expirandoFdus] = useState([
+    { id: '1', nome: 'FDU Acetona PA', data: '2025-06-05', tipo: 'FDU' },
+    { id: '2', nome: 'FDU Álcool Etílico 70%', data: '2025-06-12', tipo: 'FDU' },
+    { id: '3', nome: 'FDU Ácido Clorídrico', data: '2025-06-18', tipo: 'FDU' },
+    { id: '4', nome: 'FDU Hipoclorito de Sódio', data: '2025-06-24', tipo: 'FDU' }
   ]);
 
   useEffect(() => {
@@ -166,23 +166,119 @@ export default function DashboardPage() {
 
   async function loadStats() {
     try {
-      // Aqui implementaria a lógica real para buscar dados do Supabase
-      // Estatísticas de Metrologia - Simplificado para demonstração
-      const metrologia = {
-        totalCertificados: 42,
-        certificadosRecentes: 8,
-        equipamentos: 35,
-        equipamentosVencidos: 3,
-        proximasCalibracoes: 5
+      // Define dates comum para todas as consultas
+      const today = new Date();
+      const thirtyDaysLater = new Date();
+      thirtyDaysLater.setDate(today.getDate() + 30);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      // Estatísticas de Metrologia - Buscando dados reais do Supabase
+      let metrologia = {
+        totalCertificados: 0,
+        certificadosRecentes: 0,
+        equipamentos: 0,
+        equipamentosVencidos: 0,
+        proximasCalibracoes: 0
       };
+      
+      // Buscar quantidade total de certificados
+      const { data: certificadosData, error: certificadosError } = await supabase
+        .from('certificados')
+        .select('count');
+      
+      if (!certificadosError && certificadosData) {
+        metrologia.totalCertificados = certificadosData[0]?.count || 0;
+      }
+      
+      // Buscar certificados recentes (últimos 30 dias)
+      const { data: recentCertsData, error: recentCertsError } = await supabase
+        .from('certificados')
+        .select('count')
+        .gt('data_criacao', thirtyDaysAgo.toISOString());
+      
+      if (!recentCertsError && recentCertsData) {
+        metrologia.certificadosRecentes = recentCertsData[0]?.count || 0;
+      }
+      
+      // Buscar quantidade total de equipamentos
+      const { data: equipamentosData, error: equipamentosError } = await supabase
+        .from('equipamentos')
+        .select('count');
+      
+      if (!equipamentosError && equipamentosData) {
+        metrologia.equipamentos = equipamentosData[0]?.count || 0;
+      }
+      
+      // Buscar equipamentos com calibração vencida
+      const { data: vencidosData, error: vencidosError } = await supabase
+        .from('equipamentos')
+        .select('count')
+        .lt('data_proxima_calibracao', today.toISOString());
+      
+      if (!vencidosError && vencidosData) {
+        metrologia.equipamentosVencidos = vencidosData[0]?.count || 0;
+      }
+      
+      // Buscar equipamentos com calibração próxima (próximos 30 dias)
+      const { data: proximasData, error: proximasError } = await supabase
+        .from('equipamentos')
+        .select('count')
+        .lt('data_proxima_calibracao', thirtyDaysLater.toISOString())
+        .gt('data_proxima_calibracao', today.toISOString());
+      
+      if (!proximasError && proximasData) {
+        metrologia.proximasCalibracoes = proximasData[0]?.count || 0;
+      }
 
-      // Estatísticas de FISPQ - Simplificado para demonstração
-      const fispq = {
-        totalFispqs: 68,
-        fispqsExpirando: 12,
-        setores: 6,
-        fichasEmergencia: 24
+      // Estatísticas de FDU - Agora buscando dados reais do Supabase
+      let fdu = {
+        totalFdus: 0,
+        fdusExpirando: 0,
+        setores: 0,
+        fichasEmergencia: 0
       };
+      
+      // Buscar quantidade total de FDUs
+      const { data: fdusData, error: fdusError } = await supabase
+        .from('fdus')
+        .select('count');
+      
+      if (!fdusError && fdusData) {
+        fdu.totalFdus = fdusData[0]?.count || 0;
+      }
+      
+      // Buscar FDUs expirando (próximos 30 dias)
+      const { data: expiringData, error: expiringError } = await supabase
+        .from('fdus')
+        .select('count')
+        .lt('validade', thirtyDaysLater.toISOString())
+        .gt('validade', today.toISOString());
+      
+      if (!expiringError && expiringData) {
+        fdu.fdusExpirando = expiringData[0]?.count || 0;
+      }
+      
+      // Buscar setores únicos
+      const { data: setoresData, error: setoresError } = await supabase
+        .from('fdus')
+        .select('setor')
+        .is('setor', 'not.null');
+      
+      if (!setoresError && setoresData) {
+        // Contar setores únicos
+        const uniqueSectors = new Set(setoresData.map(item => item.setor));
+        fdu.setores = uniqueSectors.size;
+      }
+      
+      // Buscar fichas de emergência
+      const { data: fichasData, error: fichasError } = await supabase
+        .from('fichas_emergencia')
+        .select('count');
+      
+      if (!fichasError && fichasData) {
+        fdu.fichasEmergencia = fichasData[0]?.count || 0;
+      }
 
       // Estatísticas de Usuários - Simplificado para demonstração
       const usuarios = {
@@ -195,7 +291,7 @@ export default function DashboardPage() {
 
       setStats({
         metrologia,
-        fispq,
+        fdu,
         usuarios,
         atividades: stats.atividades
       });
@@ -208,6 +304,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      {/* Botão flutuante de voltar ao painel (será implementado nas outras páginas) */}
       {/* Header com logo e informações de usuário */}
       <header className="sticky top-0 z-30 w-full py-4 px-6 md:px-10 bg-black/40 backdrop-blur-sm border-b border-gray-800 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-3">
@@ -313,12 +410,12 @@ export default function DashboardPage() {
             />
             
             <StatCard
-              title="FISPQ"
-              value={stats.fispq.totalFispqs}
+              title="FDU"
+              value={stats.fdu.totalFdus}
               icon={HiBeaker}
               color="text-purple-400"
               change={-3}
-              subtitle={`${stats.fispq.fispqsExpirando} a expirar`}
+              subtitle={`${stats.fdu.fdusExpirando} a expirar`}
             />
             
             <StatCard
@@ -344,8 +441,8 @@ export default function DashboardPage() {
               />
               
               <AlertItem
-                title="FISPQs Expirando"
-                items={expirandoFispqs}
+                title="FDUs Expirando"
+                items={expirandoFdus}
               />
             </div>
             
@@ -376,17 +473,17 @@ export default function DashboardPage() {
             
             {/* Módulo de FISPQ */}
             <ModuleCard
-              title="FISPQ e Fichas de Emergência"
+              title="FDU e Fichas de Emergência"
               icon={HiBeaker}
               statItems={[
-                { label: 'FISPQs', value: stats.fispq.totalFispqs, icon: HiDocumentText, color: 'text-purple-400' },
-                { label: 'Fichas Emergência', value: stats.fispq.fichasEmergencia, icon: HiExclamation, color: 'text-red-400' },
-                { label: 'Setores', value: stats.fispq.setores, icon: HiOfficeBuilding, color: 'text-indigo-400' }
+                { label: 'FDUs', value: stats.fdu.totalFdus, icon: HiDocumentText, color: 'text-purple-400' },
+                { label: 'Fichas Emergência', value: stats.fdu.fichasEmergencia, icon: HiExclamation, color: 'text-red-400' },
+                { label: 'Setores', value: stats.fdu.setores, icon: HiOfficeBuilding, color: 'text-indigo-400' }
               ]}
               actions={[
                 { label: 'Acessar Módulo', onClick: () => router.push('/fdu') },
-                { label: 'Nova FDU', onClick: () => router.push('/fdu/novo') },
-                { label: 'Nova Ficha', onClick: () => router.push('/fdu/ficha-emergencia/novo') }
+                { label: 'Nova FDU', onClick: () => router.push('/fdu/fdu/novo') },
+                { label: 'Nova Ficha', onClick: () => router.push('/fdu/emergencia') }
               ]}
             />
           </div>

@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Layout from '../components/Layout';
 import { useRouter } from 'next/navigation';
-import { checkAuth } from '../lib/supabaseClient';
+import { checkAuth, supabase } from '../lib/supabaseClient';
+import { motion } from 'framer-motion';
 
 
 interface Equipment {
@@ -26,6 +27,7 @@ interface Equipment {
 export default function Home() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -48,6 +50,21 @@ export default function Home() {
         setIsAuthenticated(false);
       } else {
         setIsAuthenticated(true);
+        
+        // Verificar se o usuário é administrador
+        try {
+          const { data: userRoleData, error: userRoleError } = await supabase
+            .from('usuarios')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (!userRoleError && userRoleData) {
+            setIsAdmin(userRoleData.role === 'admin');
+          }
+        } catch (error) {
+          console.error('Erro ao verificar papel do usuário:', error);
+        }
       }
     }
     verifyAuth();
@@ -173,8 +190,24 @@ export default function Home() {
   }, [filteredEquipments, currentPage, itemsPerPage]);
 
   return (
-    <Layout title="Equipamentos">
-      {/* Filters */}
+    <Layout>
+      {/* Botão flutuante para voltar ao painel (apenas para admin) */}
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-30">
+          <motion.button
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.05 }}
+            onClick={() => router.push('/admin/dashboard')}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 rounded-full py-3 px-5 text-white shadow-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            <span>Voltar ao Painel</span>
+          </motion.button>
+        </div>
+      )}
       <div className="bg-[var(--card-bg)] p-4 rounded-lg shadow mb-6 transition-colors duration-300">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
