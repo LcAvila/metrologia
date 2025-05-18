@@ -130,11 +130,13 @@ const Sidebar = memo(function Sidebar({ title }: SidebarProps) {
               <div className={`relative transition-all duration-300 ease-in-out ${isExpanded ? 'w-32' : 'w-12'}`}>
                 <img 
                   src="/assets/logo.png" 
-                  alt="Logo Metrologia Compactor" 
+                  alt="Logo AVZ Quality" 
                   className={`w-full h-auto transform transition-all duration-300 ease-in-out hover:scale-105`}
                 />
               </div>
-              <span className={`text-lg font-semibold transition-all duration-300 ml-1 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>Metrologia Compactor</span>
+              <span className={`text-lg font-semibold transition-all duration-300 ml-1 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+                <span className="bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 bg-clip-text text-transparent font-bold">AVZ</span> Quality
+              </span>
             </div>
           </div>
           <div className="flex items-center">

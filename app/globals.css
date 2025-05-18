@@ -8,6 +8,21 @@
   to { opacity: 1; }
 }
 
+/* Animação para a barra de progresso */
+@keyframes progressBar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+/* Classes de animação para a tela inicial do AVZ Quality */
+.animate-fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+
+.animate-progress-bar {
+  animation: progressBar 2.8s ease-in-out forwards;
+}
+
 @keyframes slideInUp {
   from {
     transform: translateY(20px);

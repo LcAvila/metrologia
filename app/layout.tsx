@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Metrologia Compactor",
-  description: "Sistema de gestão de equipamentos de metrologia da Compactor",
+  title: "AVZ Quality",
+  description: "Sistema integrado de gestão de metrologia e FDUs - Precisão e Segurança em Harmonia",
 };
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="/assets/favicon/favicon.ico" type="image/x-icon" />
         <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
       </head>
       <body

@@ -119,14 +119,64 @@ export default function ConsultaPage() {
         </div>
       </div>
 
-      {/* Área Restrita - link discreto */}
-      <div className="absolute top-4 right-4 z-10">
-        <Link
-          href="/login"
-          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-        >
-          Área Restrita
-        </Link>
+      {/* Menu de navegação */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("intro")}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    activeTab === "intro"
+                      ? "border-blue-500 text-gray-900 dark:text-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                  }`}
+                >
+                  Início
+                </button>
+                <button
+                  onClick={() => setActiveTab("metrologia")}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    activeTab === "metrologia"
+                      ? "border-blue-500 text-gray-900 dark:text-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                  }`}
+                >
+                  Metrologia
+                </button>
+                <button
+                  onClick={() => setActiveTab("fdu")}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    activeTab === "fdu"
+                      ? "border-green-500 text-gray-900 dark:text-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                  }`}
+                >
+                  FDUs
+                </button>
+                <button
+                  onClick={() => setActiveTab("emergencia")}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    activeTab === "emergencia"
+                      ? "border-purple-500 text-gray-900 dark:text-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                  }`}
+                >
+                  Fichas de Emergência
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <Link
+                href="/login"
+                className="ml-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Área Restrita
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Conteúdo principal */}
@@ -182,15 +232,20 @@ export default function ConsultaPage() {
         </AnimatePresence>
       </main>
 
-      {/* Rodapé - igual ao do admin e fixo na parte inferior */}
-      <footer className="fixed bottom-0 left-0 right-0 py-3 px-4 bg-black/80 backdrop-blur-sm border-t border-gray-800 text-center text-gray-400 text-sm z-10">
-        <div className="max-w-7xl mx-auto">
-          <p>Sistema de Documentação Técnica &copy; {new Date().getFullYear()} - Todos os direitos reservados</p>
-          <div className="flex flex-wrap justify-center gap-4 mt-1 text-xs">
-            <Link href="/politica-privacidade" className="hover:text-gray-200 transition-colors">Política de Privacidade</Link>
-            <Link href="/termos-uso" className="hover:text-gray-200 transition-colors">Termos de Uso</Link>
-            <Link href="/faq" className="hover:text-gray-200 transition-colors">FAQ</Link>
-            <span className="text-blue-400">Desenvolvido por Lucas Ávila</span>
+      {/* Rodapé */}
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                &copy; {new Date().getFullYear()} AVZ Quality. Todos os direitos reservados.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Desenvolvido por Lucas Ávila e Sérgio Zago
+              </p>
+            </div>
           </div>
         </div>
       </footer>

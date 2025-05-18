@@ -190,7 +190,7 @@ export default function Home() {
   }, [filteredEquipments, currentPage, itemsPerPage]);
 
   return (
-    <Layout>
+    <Layout title="Gestão de Equipamentos de Metrologia">
       {/* Botão flutuante para voltar ao painel (apenas para admin) */}
       {isAdmin && (
         <div className="fixed bottom-6 right-6 z-30">

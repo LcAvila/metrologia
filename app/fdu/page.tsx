@@ -26,6 +26,8 @@ const fadeIn = {
 export default function FDUPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -60,15 +62,64 @@ export default function FDUPage() {
       
       setUser(session.user);
       
-      // Verificar se o usuário é administrador
-      const { data: userRoleData, error: userRoleError } = await supabase
+      // Buscar informações do usuário nas colunas específicas da tabela usuarios
+      const { data: userData, error: userError } = await supabase
         .from('usuarios')
-        .select('role')
+        .select('nome, sobrenome, foto, role') // Colunas específicas conforme a estrutura da tabela
         .eq('id', session.user.id)
         .single();
       
-      if (!userRoleError && userRoleData) {
-        setIsAdmin(userRoleData.role === 'admin');
+      console.log('Dados do usuário:', userData);
+      
+      if (!userError && userData) {
+        // Concatenar nome e sobrenome para exibir o nome completo
+        const nomeCompleto = userData.nome && userData.sobrenome 
+          ? `${userData.nome} ${userData.sobrenome}` 
+          : userData.nome || 'Usuário';
+        
+        setUserName(nomeCompleto);
+        
+        // Guardar a URL da foto para uso nos componentes de avatar
+        let fotoUrl = '';
+        
+        // Usar a URL da foto se estiver disponível
+        if (userData.foto) {
+          // Determinar se a URL é completa ou relativa
+          fotoUrl = userData.foto.startsWith('http') || userData.foto.startsWith('/') 
+            ? userData.foto 
+            : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${userData.foto}`;
+        }
+        
+        // Criar uma nova variável para armazenar a URL da foto
+        const userWithPhoto = {
+          ...session.user,
+          user_metadata: {
+            ...(session.user.user_metadata || {}),
+            avatar_url: fotoUrl || ''
+          }
+        };
+        
+        // Atualizar o estado do usuário com a nova variável
+        setUser(userWithPhoto);
+        
+        setIsAdmin(userData.role === 'admin');
+        
+        // Converter o código do tipo para texto mais legível
+        let roleDisplay = '';
+        switch(userData.role) {
+          case 'admin':
+            roleDisplay = 'Administrador';
+            break;
+          case 'quimico':
+            roleDisplay = 'Químico';
+            break;
+          case 'metrologista':
+            roleDisplay = 'Metrologista';
+            break;
+          default:
+            roleDisplay = userData.role;
+        }
+        setUserRole(roleDisplay);
       }
     } catch (error) {
       console.error('Erro ao verificar usuário:', error);
@@ -149,6 +200,29 @@ export default function FDUPage() {
     });
   }
 
+  // Função para obter as iniciais do nome do usuário
+  const getInitials = (name: string) => {
+    if (!name) return '?';
+    
+    const parts = name.split(' ');
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+  
+  // Função para obter uma cor de fundo com base no nome do usuário
+  const getUserColor = (name: string) => {
+    if (!name) return 'bg-gray-600';
+    
+    // Definir cores por usuário
+    if (name.includes('Lucas')) return 'bg-blue-600';
+    if (name.includes('Vinicius')) return 'bg-green-600';
+    if (name.includes('Sérgio')) return 'bg-purple-600';
+    
+    // Cor padrão se não for um dos três usuários conhecidos
+    return 'bg-indigo-600';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
@@ -182,44 +256,74 @@ export default function FDUPage() {
       
       {/* Header */}
       <header className="sticky top-0 z-10 backdrop-blur-lg bg-gray-900/80 border-b border-gray-800 px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-            <HiBeaker className="text-xl" />
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo e título à esquerda */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+              <HiBeaker className="text-xl" />
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+              Painel FDU
+            </h1>
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            Painel FDU
-          </h1>
-        </div>
 
-        {/* Botão de usuário e menu dropdown */}
-        <div className="relative">
-          <button 
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg py-2 px-3 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-indigo-600/50 flex items-center justify-center text-white">
-              <HiUser />
-            </div>
-            <span className="hidden sm:inline text-sm">{user?.email}</span>
-            <HiOutlineChevronDown className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-          </button>
+          {/* Botão de usuário e menu dropdown à direita */}
+          <div className="relative">
+            <button 
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg py-2 px-3 transition-colors"
+            >
+              {/* Foto de perfil do usuário */}
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
+                {user?.user_metadata?.avatar_url ? (
+                  <img 
+                    src={user.user_metadata.avatar_url} 
+                    alt={userName} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className={`w-full h-full ${getUserColor(userName)} flex items-center justify-center text-white font-medium text-sm`}>
+                    {getInitials(userName)}
+                  </div>
+                )}
+              </div>
+              {/* Apenas nome do usuário */}
+              <span className="hidden sm:inline text-sm font-medium">{userName}</span>
+              <HiOutlineChevronDown className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-          {userMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-30">
-              <div className="p-3 border-b border-gray-700">
-                <p className="text-sm font-medium text-white">Químico</p>
-                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-30">
+                <div className="p-3 border-b border-gray-700 flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img 
+                        src={user.user_metadata.avatar_url} 
+                        alt={userName} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className={`w-full h-full ${getUserColor(userName)} flex items-center justify-center text-white font-medium`}>
+                        {getInitials(userName)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{userName || 'Usuário'}</p>
+                    <p className="text-xs text-gray-400 truncate">{userRole}</p>
+                  </div>
+                </div>
+                <div className="p-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700/50 rounded flex items-center gap-2"
+                  >
+                    <HiLogout /> Sair
+                  </button>
+                </div>
               </div>
-              <div className="p-2">
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700/50 rounded flex items-center gap-2"
-                >
-                  <HiLogout /> Sair
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
