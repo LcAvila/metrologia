@@ -79,105 +79,58 @@ const FDUDetailModal = ({ fdu, onClose }: FDUDetailModalProps) => {
               <div>
                 <h3 className="text-sm font-medium text-gray-400 mb-1">Informações Detalhadas</h3>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 space-y-3">
-                  {fdu.descricao ? (
+                  {fdu.id && (
+                    <div>
+                      <span className="text-gray-500 text-sm">ID do Documento</span>
+                      <p className="text-white font-mono text-xs">{fdu.id}</p>
+                    </div>
+                  )}
+                  {fdu.descricao && (
                     <div>
                       <span className="text-gray-500 text-sm">Descrição</span>
-                      <p className="text-white">{String(fdu.descricao)}</p>
+                      <p className="text-white">{fdu.descricao}</p>
                     </div>
-                  ) : null}
-                  {fdu.instrucoes ? (
+                  )}
+                  {fdu.instrucoes && (
                     <div>
                       <span className="text-gray-500 text-sm">Instruções de Uso</span>
-                      <p className="text-white">{String(fdu.instrucoes)}</p>
+                      <p className="text-white">{fdu.instrucoes}</p>
                     </div>
-                  ) : null}
-                  {fdu.precaucoes ? (
+                  )}
+                  {fdu.precaucoes && (
                     <div>
                       <span className="text-gray-500 text-sm">Precauções</span>
-                      <p className="text-white">{String(fdu.precaucoes)}</p>
+                      <p className="text-white">{fdu.precaucoes}</p>
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </div>
               
-              {fdu.composicao ? (
+              {fdu.composicao && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-400 mb-1">Composição</h3>
                   <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-                    <p className="text-white whitespace-pre-line">{String(fdu.composicao)}</p>
+                    <p className="text-white whitespace-pre-line">{fdu.composicao}</p>
                   </div>
                 </div>
-              ) : null}
+              )}
               
               {/* Renderiza todas as outras propriedades disponíveis */}
               <div>
                 <h3 className="text-sm font-medium text-gray-400 mb-1">Informações Adicionais</h3>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 space-y-3">
                   {Object.entries(fdu).map(([key, value]) => {
-                    // Pula propriedades já exibidas, IDs, ou vazias
+                    // Pula propriedades já exibidas ou vazias
                     if (['id', 'produto', 'fabricante', 'setor', 'numeroCas', 'tipoRisco', 'criadoEm', 
-                         'validade', 'arquivoUrl', 'descricao', 'instrucoes', 'precaucoes', 'composicao',
-                         'userId', 'user_id', 'usuario_id', 'usuarioId', 'createdBy', 'createdAt', 'updatedAt',
-                         'criado_por', 'atualizado_por', 'atualizado_em'].includes(key) || 
+                         'validade', 'arquivoUrl', 'descricao', 'instrucoes', 'precaucoes', 'composicao'].includes(key) || 
                         !value) {
                       return null;
                     }
                     
-                    // Formata o valor para exibição
-                    const formatValue = (val: any) => {
-                      if (typeof val === 'boolean') {
-                        return val ? 'Sim' : 'Não';
-                      } else if (typeof val === 'string') {
-                        return val;
-                      } else if (val === null || val === undefined) {
-                        return 'Não informado';
-                      } else if (typeof val === 'object') {
-                        // Remove dados sensíveis de objetos
-                        if (Array.isArray(val)) {
-                          return val.join(', ');
-                        } else {
-                          const safeObj = {...val};
-                          delete safeObj.id;
-                          delete safeObj.userId;
-                          delete safeObj.user_id;
-                          delete safeObj.usuario_id;
-                          delete safeObj.usuarioId;
-                          delete safeObj.criado_por;
-                          delete safeObj.atualizado_por;
-                          delete safeObj.createdBy;
-                          delete safeObj.createdAt;
-                          delete safeObj.updatedAt;
-                          return Object.keys(safeObj).length > 0 ? JSON.stringify(safeObj) : 'Objeto';
-                        }
-                      } else {
-                        return String(val);
-                      }
-                    };
-                    
-                    // Formata o nome da propriedade para exibição
-                    const formatKey = (k: string) => {
-                      // Mapeia nomes de propriedades específicas
-                      const keyMappings: Record<string, string> = {
-                        'possuiFichaTecnica': 'Possui Ficha Técnica',
-                        'possuiManual': 'Possui Manual',
-                        'disponivel': 'Disponível para Uso',
-                        'aprovado': 'Aprovado',
-                        'emUso': 'Em Uso'
-                      };
-                      
-                      if (keyMappings[k]) {
-                        return keyMappings[k];
-                      }
-                      
-                      // Formata camelCase para Palavras Capitalizadas
-                      return k.replace(/([A-Z])/g, ' $1')
-                       .replace(/^./, str => str.toUpperCase());
-                    };
-                    
                     return (
                       <div key={key}>
-                        <span className="text-gray-500 text-sm">{formatKey(key)}</span>
-                        <p className="text-white">{formatValue(value)}</p>
+                        <span className="text-gray-500 text-sm">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                        <p className="text-white">{typeof value === 'string' ? value : JSON.stringify(value)}</p>
                       </div>
                     );
                   })}

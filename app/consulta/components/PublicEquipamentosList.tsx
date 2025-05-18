@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiSearch, HiFilter, HiChevronDown, HiX, HiCalendar, 
-         HiRefresh, HiWrenchScrewdriver, HiExclamationCircle } from 'react-icons/hi';
-import { HiWrenchScrewdriver as HiWrenchIcon } from 'react-icons/hi2';
+import { FiSearch as HiSearch, FiFilter as HiFilter, FiChevronDown as HiChevronDown, 
+         FiX as HiX, FiCalendar as HiCalendar, FiRefreshCw as HiRefresh, 
+         FiAlertCircle as HiExclamationCircle, FiTool as HiWrenchIcon } from 'react-icons/fi';
 import { supabase } from '../../lib/supabaseClient';
 import { formatarData, calcularStatusData } from '../../utils/formatters';
 
@@ -15,7 +15,7 @@ interface Equipamento {
   marca: string;
   modelo: string;
   setor: string;
-  proxima_calibracao: string;
+  nextCalibration: string;
   status: string;
   certificado_url?: string;
 }
@@ -23,7 +23,7 @@ interface Equipamento {
 // Componente de cartão para equipamento individual
 const EquipamentoCard = ({ equipamento }: { equipamento: Equipamento }) => {
   // Calcular o status com base na data de calibração
-  const status = calcularStatusData(equipamento.proxima_calibracao);
+  const status = calcularStatusData(equipamento.nextCalibration);
   
   // Função para obter a cor com base no status da validade
   const getStatusColor = () => {
@@ -68,7 +68,7 @@ const EquipamentoCard = ({ equipamento }: { equipamento: Equipamento }) => {
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <HiCalendar className="mr-1" />
-            <span>Próxima Calibração: {formatarData(equipamento.proxima_calibracao)}</span>
+            <span>Próxima Calibração: {formatarData(equipamento.nextCalibration)}</span>
           </div>
           
           {equipamento.certificado_url && (
@@ -112,7 +112,7 @@ const PublicEquipamentosList = () => {
         const { data, error } = await supabase
           .from('equipamentos')
           .select('*')
-          .order('proxima_calibracao', { ascending: true });
+          .order('nextCalibration', { ascending: true });
           
         if (error) throw error;
         
@@ -159,7 +159,7 @@ const PublicEquipamentosList = () => {
     // Aplicar filtro de status
     if (selectedStatus !== 'Todos') {
       filtered = filtered.filter(equip => {
-        const status = calcularStatusData(equip.proxima_calibracao);
+        const status = calcularStatusData(equip.nextCalibration);
         if (selectedStatus === 'Calibrado' && status === 'valid') return true;
         if (selectedStatus === 'Vence em Breve' && status === 'expiring') return true;
         if (selectedStatus === 'Calibração Vencida' && status === 'expired') return true;
