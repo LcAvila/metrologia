@@ -1,23 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FISPQ } from '../../fispq/types/fispq';
-import { fispqService } from '../../fispq/services/fispqService';
+import { FDU } from '../../fdu/types/fdu';
+import { fduService } from '../../fdu/services/fduService';
 import { HiSearch, HiFilter, HiChevronDown, HiX, HiDocumentText, HiDownload, 
          HiExclamation, HiExclamationCircle, HiRefresh, HiSelector } from 'react-icons/hi';
 import VisualizarPdf from '../../components/VisualizarPdf';
 import { formatarData, calcularStatusData } from '../../utils/formatters';
 
-const PublicFISPQCard = ({ fispq }: { fispq: FISPQ }) => {
+const PublicFDUCard = ({ fdu }: { fdu: FDU }) => {
   const [showPdf, setShowPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Usar o utilitário calcularStatusData para determinar o status
-  const status = calcularStatusData(fispq.validade);
+  const status = calcularStatusData(fdu.validade);
   
   const handleViewPdf = () => {
     try {
-      if (!fispq.arquivoUrl) {
+      if (!fdu.arquivoUrl) {
         setError('URL do arquivo não disponível');
         return;
       }
@@ -30,12 +30,12 @@ const PublicFISPQCard = ({ fispq }: { fispq: FISPQ }) => {
 
   const handleDownload = () => {
     try {
-      if (!fispq.arquivoUrl) {
+      if (!fdu.arquivoUrl) {
         setError('URL do arquivo não disponível');
         return;
       }
       
-      window.open(fispq.arquivoUrl, '_blank');
+      window.open(fdu.arquivoUrl, '_blank');
     } catch (err) {
       console.error('Erro ao baixar arquivo:', err);
       setError('Erro ao baixar o arquivo. Tente novamente mais tarde.');
@@ -81,28 +81,28 @@ const PublicFISPQCard = ({ fispq }: { fispq: FISPQ }) => {
           </div>
           
           <div className="flex-1">
-            <h3 className="text-lg font-medium text-white mb-1">{fispq.produto}</h3>
-            <p className="text-sm text-gray-400">Fabricante: {fispq.fabricante}</p>
+            <h3 className="text-lg font-medium text-white mb-1">{fdu.produto}</h3>
+            <p className="text-sm text-gray-400">Fabricante: {fdu.fabricante}</p>
             
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div>
                 <p className="text-xs text-gray-500">Setor</p>
-                <p className="text-sm text-white">{fispq.setor}</p>
+                <p className="text-sm text-white">Setor: {fdu.setor}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Validade</p>
-                <p className="text-sm text-white">{formatarData(fispq.validade)}</p>
+                <p className="text-sm text-white">Validade: {formatarData(fdu.validade)}</p>
               </div>
-              {fispq.numeroCas && (
+              {fdu.numeroCas && (
                 <div>
                   <p className="text-xs text-gray-500">Número CAS</p>
-                  <p className="text-sm text-white">{fispq.numeroCas}</p>
+                  <p className="text-sm text-white">CAS: {fdu.numeroCas}</p>
                 </div>
               )}
-              {fispq.tipoRisco && (
+              {fdu.tipoRisco && (
                 <div>
                   <p className="text-xs text-gray-500">Tipo de Risco</p>
-                  <p className="text-sm text-white">{fispq.tipoRisco}</p>
+                  <p className="text-sm text-white">Tipo de Risco: {fdu.tipoRisco}</p>
                 </div>
               )}
             </div>
@@ -132,19 +132,19 @@ const PublicFISPQCard = ({ fispq }: { fispq: FISPQ }) => {
         </div>
       </motion.div>
 
-      {showPdf && (
+      {showPdf && fdu.arquivoUrl && (
         <VisualizarPdf 
-          filePath={fispq.arquivoUrl} 
+          filePath={fdu.arquivoUrl} 
           onClose={() => setShowPdf(false)} 
-          title={`FISPQ - ${fispq.produto}`} 
+          title={`FDU - ${fdu.produto}`} 
         />
       )}
     </>
   );
 };
 
-export default function PublicFISPQList() {
-  const [fispqs, setFispqs] = useState<FISPQ[]>([]);
+export default function PublicFDUList() {
+  const [fdus, setFdus] = useState<FDU[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [stats, setStats] = useState({ total: 0, setores: 0, expirando: 0 });
@@ -157,20 +157,20 @@ export default function PublicFISPQList() {
   });
 
   useEffect(() => {
-    loadFISPQs();
+    loadFDUs();
     loadStats();
   }, []);
 
-  const loadFISPQs = async () => {
+  const loadFDUs = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fispqService.publicList();
-      setFispqs(data || []);
+      const data = await fduService.publicList();
+      setFdus(data || []);
     } catch (error: any) {
-      console.error('Erro ao carregar FISPQs:', error);
-      setError(error.message || 'Falha ao carregar as FISPQs. Tente novamente mais tarde.');
-      setFispqs([]);
+      console.error('Erro ao carregar FDUs:', error);
+      setError(error.message || 'Falha ao carregar as FDUs. Tente novamente mais tarde.');
+      setFdus([]);
     } finally {
       setLoading(false);
     }
@@ -178,16 +178,16 @@ export default function PublicFISPQList() {
 
   const loadStats = async () => {
     try {
-      const data = await fispqService.getPublicStatistics();
+      const data = await fduService.getPublicStatistics();
       setStats(data);
     } catch (error: any) {
-      console.error('Erro ao carregar estatísticas:', error);
+      console.error('Erro ao carregar estatísticas de FDUs:', error);
       // Não exibimos erro de estatísticas para o usuário
     }
   };
 
   const handleRefresh = () => {
-    loadFISPQs();
+    loadFDUs();
     loadStats();
   };
 
@@ -201,12 +201,12 @@ export default function PublicFISPQList() {
     setError(null);
     
     try {
-      const data = await fispqService.publicList(filters);
-      setFispqs(data || []);
+      const data = await fduService.publicList(filters);
+      setFdus(data || []);
     } catch (error: any) {
-      console.error('Erro ao pesquisar FISPQs:', error);
-      setError(error.message || 'Falha ao pesquisar FISPQs. Tente novamente.');
-      setFispqs([]);
+      console.error('Erro ao pesquisar FDUs:', error);
+      setError(error.message || 'Falha ao pesquisar FDUs. Tente novamente.');
+      setFdus([]);
     } finally {
       setLoading(false);
     }
@@ -220,7 +220,7 @@ export default function PublicFISPQList() {
       tipoRisco: '',
     });
     // Recarregar os dados sem filtros
-    loadFISPQs();
+    loadFDUs();
   };
 
   return (
@@ -228,9 +228,9 @@ export default function PublicFISPQList() {
       <div className="bg-gray-900/70 border border-gray-800 rounded-xl p-5">
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-1">Fichas de Informação (FISPQ)</h2>
+            <h2 className="text-2xl font-bold text-white mb-1">Fichas de Informação (FDU)</h2>
             <p className="text-sm text-gray-400">
-              Consulte as {stats.total} FISPQs disponíveis em {stats.setores} setores diferentes.
+              Consulte as {stats.total} FDUs disponíveis em {stats.setores} setores diferentes.
               {stats.expirando > 0 && (
                 <span className="ml-2 text-yellow-400 font-medium">
                   ({stats.expirando} expirando nos próximos 30 dias)
@@ -262,7 +262,7 @@ export default function PublicFISPQList() {
               <HiDocumentText className="text-xl text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Total de FISPQs</p>
+              <p className="text-sm text-gray-400">Total de FDUs</p>
               <p className="text-xl font-semibold text-white">{stats.total}</p>
             </div>
           </div>
@@ -380,10 +380,10 @@ export default function PublicFISPQList() {
         <div className="flex items-center justify-center h-64">
           <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
-      ) : fispqs.length === 0 ? (
+      ) : !loading && fdus.length === 0 ? (
         <div className="bg-gray-900/70 border border-gray-800 rounded-xl p-8 text-center">
           <HiDocumentText className="text-gray-500 text-5xl mx-auto mb-4" />
-          <h3 className="text-xl text-gray-400">Nenhuma FISPQ encontrada</h3>
+          <h3 className="text-xl text-gray-400">Nenhuma FDU encontrada</h3>
           <p className="text-gray-500 mt-2">Tente ajustar os filtros ou entre em contato com a equipe de química.</p>
           {Object.values(filters).some(f => f !== '') && (
             <button 
@@ -397,15 +397,15 @@ export default function PublicFISPQList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
-            {fispqs.map(fispq => (
+            {fdus.map((fdu) => (
               <motion.div
-                key={fispq.id}
+                key={fdu.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <PublicFISPQCard fispq={fispq} />
+                <PublicFDUCard key={fdu.id} fdu={fdu} />
               </motion.div>
             ))}
           </AnimatePresence>

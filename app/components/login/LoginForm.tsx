@@ -69,8 +69,8 @@ export default function LoginForm() {
         
         // Redirecionar com base no tipo de usuário OU e-mail específico
         if (emailParaLogin === 'lucasavila1972@gmail.com') {
-          console.log('Login com lucasavila1972@gmail.com. Redirecionando para /fispq');
-          router.push('/fispq');
+          console.log('Login com lucasavila1972@gmail.com. Redirecionando para /fdu');
+          router.push('/fdu');
         } else if (userType === 'admin') {
           console.log('Usuário autenticado como admin. Redirecionando para /admin');
           router.push('/admin');
@@ -78,8 +78,8 @@ export default function LoginForm() {
           console.log('Usuário autenticado como metrologista. Redirecionando para /metrologia');
           router.push('/metrologia');
         } else if (userType === 'quimico') {
-          console.log('Usuário autenticado como quimico. Redirecionando para /fispq');
-          router.push('/fispq');
+          console.log('Usuário autenticado como quimico. Redirecionando para /fdu');
+          router.push('/fdu');
         } else {
           // Se não tiver tipo definido, redirecionar para a página inicial
           console.log('Tipo de usuário não reconhecido. Redirecionando para /');

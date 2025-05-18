@@ -34,7 +34,7 @@ export function getPublicUrl(filePath: string): string {
     // Se o caminho começar com um bucket conhecido, extrair o bucket e o caminho
     if (filePath.startsWith('documentos/') || 
         filePath.startsWith('certificados/') || 
-        filePath.startsWith('fisqps/') || 
+        filePath.startsWith('fdus/') || 
         filePath.startsWith('fichas_emergencia/') || 
         filePath.startsWith('fotos/')) {
       const parts = filePath.split('/');
@@ -64,7 +64,7 @@ export function getPublicUrl(filePath: string): string {
     // Se o caminho já incluir um prefixo de bucket, extractá-lo
     if (filePath.startsWith('documentos/') || 
         filePath.startsWith('certificados/') || 
-        filePath.startsWith('fisqps/') || 
+        filePath.startsWith('fdus/') || 
         filePath.startsWith('fichas_emergencia/') || 
         filePath.startsWith('fotos/')) {
       const parts = filePath.split('/');
@@ -74,8 +74,8 @@ export function getPublicUrl(filePath: string): string {
     // Caso contrário, adivinhar o bucket com base no nome/tipo
     else if (filePath.includes('certificado')) {
       bucket = 'certificados';
-    } else if (filePath.includes('fispq')) {
-      bucket = 'fisqps';
+    } else if (filePath.includes('fdu')) {
+      bucket = 'fdus';
     } else if (filePath.includes('emergencia')) {
       bucket = 'fichas_emergencia';
     } else if (filePath.includes('.jpg') || filePath.includes('.png')) {

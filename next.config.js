@@ -12,6 +12,21 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Regras de redirecionamento para migração de FISPQ para FDU
+  async redirects() {
+    return [
+      {
+        source: '/fispq',
+        destination: '/fdu',
+        permanent: true,
+      },
+      {
+        source: '/fispq/:path*',
+        destination: '/fdu/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

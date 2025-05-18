@@ -1,20 +1,20 @@
 'use client';
 import { useState } from 'react';
-import { FISPQ } from '../types/fispq';
+import { FDU } from '../types/fdu';
 import { HiDocumentText, HiDownload, HiOutlinePencil, HiTrash, HiExclamation, HiShieldExclamation } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import VisualizarPdf from '../../components/VisualizarPdf';
 import { formatarData } from '../../utils/formatters';
 
-interface FISPQCardProps {
-  fispq: FISPQ;
+interface FDUCardProps {
+  fdu: FDU;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   isAdmin?: boolean;
 }
 
-const FISPQCard: React.FC<FISPQCardProps> = ({ 
-  fispq, 
+const FDUCard: React.FC<FDUCardProps> = ({ 
+  fdu, 
   onEdit, 
   onDelete,
   isAdmin = false
@@ -24,14 +24,14 @@ const FISPQCard: React.FC<FISPQCardProps> = ({
 
   const isExpiring = () => {
     const today = new Date();
-    const validadeDate = new Date(fispq.validade);
+    const validadeDate = new Date(fdu.validade);
     const diffDays = Math.ceil((validadeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays <= 30 && diffDays > 0;
   };
 
   const isExpired = () => {
     const today = new Date();
-    const validadeDate = new Date(fispq.validade);
+    const validadeDate = new Date(fdu.validade);
     return validadeDate < today;
   };
 
@@ -60,21 +60,17 @@ const FISPQCard: React.FC<FISPQCardProps> = ({
   };
 
   const handleDownload = () => {
-    try {
-      if (!fispq.arquivoUrl) {
-        setError('URL do arquivo não disponível');
-        return;
-      }
-      
-      window.open(fispq.arquivoUrl, '_blank');
-    } catch (err) {
-      console.error('Erro ao baixar arquivo:', err);
-      setError('Erro ao baixar o arquivo. Tente novamente mais tarde.');
-    }
+    // Criar um link temporário para download
+    const link = document.createElement('a');
+    link.href = fdu.arquivoUrl;
+    link.download = `FDU_${fdu.produto}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleViewPdf = () => {
-    if (!fispq.arquivoUrl) {
+    if (!fdu.arquivoUrl) {
       setError('URL do arquivo não disponível');
       return;
     }
@@ -91,35 +87,28 @@ const FISPQCard: React.FC<FISPQCardProps> = ({
         {getStatusBadge()}
         
         <div className="flex items-start">
-          <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mr-4">
-            <HiDocumentText className="text-2xl text-blue-400" />
+          <div className="w-10 h-10 bg-blue-900/30 rounded-full flex items-center justify-center text-blue-400">
+            <HiDocumentText size={20} />
           </div>
-          
-          <div className="flex-1">
-            <h3 className="text-lg font-medium text-white mb-1">{fispq.produto}</h3>
-            <p className="text-sm text-gray-400">Fabricante: {fispq.fabricante}</p>
+          <div className="ml-4">
+            <h3 className="text-lg font-medium truncate">{fdu.produto}</h3>
+            <p className="text-gray-500 text-sm truncate">Fabricante: {fdu.fabricante}</p>
             
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-400">
               <div>
-                <p className="text-xs text-gray-500">Setor</p>
-                <p className="text-sm text-white">{fispq.setor}</p>
+                <p className="font-medium">Setor</p>
+                <p className="text-white">{fdu.setor}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Validade</p>
-                <p className="text-sm text-white">{formatarData(fispq.validade)}</p>
-              </div>
-              {fispq.numeroCas && (
+              {fdu.numeroCas && (
                 <div>
-                  <p className="text-xs text-gray-500">Número CAS</p>
-                  <p className="text-sm text-white">{fispq.numeroCas}</p>
+                  <p className="font-medium">CAS</p>
+                  <p className="text-white">{fdu.numeroCas}</p>
                 </div>
               )}
-              {fispq.tipoRisco && (
-                <div>
-                  <p className="text-xs text-gray-500">Tipo de Risco</p>
-                  <p className="text-sm text-white">{fispq.tipoRisco}</p>
-                </div>
-              )}
+              <div>
+                <p className="font-medium">Validade</p>
+                <p className="text-white">{formatarData(fdu.validade)}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -133,21 +122,25 @@ const FISPQCard: React.FC<FISPQCardProps> = ({
         <div className="mt-4 pt-3 border-t border-gray-800 flex flex-wrap justify-end gap-2">
           <button
             onClick={handleViewPdf}
-            className="px-3 py-1.5 bg-blue-900/30 hover:bg-blue-800/40 text-blue-400 rounded-lg text-sm flex items-center gap-1 transition-colors"
+            className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-full transition-colors"
+            title="Visualizar FDU"
           >
             <HiDocumentText /> Visualizar
           </button>
-          <button
-            onClick={handleDownload}
-            className="px-3 py-1.5 bg-green-900/30 hover:bg-green-800/40 text-green-400 rounded-lg text-sm flex items-center gap-1 transition-colors"
+          <a 
+            href={fdu.arquivoUrl} 
+            download
+            className="p-2 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-full transition-colors"
+            title="Baixar FDU"
           >
             <HiDownload /> Baixar
-          </button>
+          </a>
           
           {isAdmin && onEdit && (
             <button
-              onClick={() => onEdit(fispq.id)}
-              className="px-3 py-1.5 bg-yellow-900/30 hover:bg-yellow-800/40 text-yellow-400 rounded-lg text-sm flex items-center gap-1 transition-colors"
+              onClick={() => fdu.id && onEdit(fdu.id)}
+              className="p-2 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded-full transition-colors"
+              title="Editar FDU"
             >
               <HiOutlinePencil /> Editar
             </button>
@@ -155,8 +148,9 @@ const FISPQCard: React.FC<FISPQCardProps> = ({
           
           {isAdmin && onDelete && (
             <button
-              onClick={() => onDelete(fispq.id)}
-              className="px-3 py-1.5 bg-red-900/30 hover:bg-red-800/40 text-red-400 rounded-lg text-sm flex items-center gap-1 transition-colors"
+              onClick={() => fdu.id && onDelete(fdu.id)}
+              className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-full transition-colors"
+              title="Excluir FDU"
             >
               <HiTrash /> Excluir
             </button>
@@ -165,14 +159,14 @@ const FISPQCard: React.FC<FISPQCardProps> = ({
       </motion.div>
 
       {showPdf && (
-        <VisualizarPdf 
-          filePath={fispq.arquivoUrl} 
-          onClose={() => setShowPdf(false)} 
-          title={`FISPQ - ${fispq.produto}`} 
+        <VisualizarPdf
+          filePath={fdu.arquivoUrl}
+          title={`FDU - ${fdu.produto}`}
+          onClose={() => setShowPdf(false)}
         />
       )}
     </>
   );
 };
 
-export default FISPQCard;
+export default FDUCard;

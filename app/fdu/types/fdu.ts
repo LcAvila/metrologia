@@ -1,6 +1,6 @@
-export type FISPQStatus = 'valid' | 'expiring' | 'expired';
+export type FDUStatus = 'valid' | 'expiring' | 'expired';
 
-export interface FISPQ {
+export interface FDU {
   id: string;
   produto: string;
   fabricante: string;
@@ -10,14 +10,14 @@ export interface FISPQ {
   validade: Date | string; // Aceita tanto Date quanto string para maior flexibilidade
   arquivoUrl: string;
   criadoEm: Date | string;
-  status?: FISPQStatus; // Status calculado da FISPQ
+  status?: FDUStatus; // Status calculado da FDU
 }
 
-export interface FISPQFormData extends Omit<FISPQ, 'id' | 'criadoEm'> {
+export interface FDUFormData extends Omit<FDU, 'id' | 'criadoEm'> {
   arquivo: File | null;
 }
 
-export type FISPQFilter = {
+export type FDUFilter = {
   produto?: string;
   fabricante?: string;
   numeroCas?: string;

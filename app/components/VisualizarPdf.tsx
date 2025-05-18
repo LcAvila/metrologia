@@ -45,8 +45,8 @@ export default function VisualizarPdf({ filePath, onClose, title }: VisualizarPd
       // Mapear diferentes tipos de arquivos para demos específicas
       if (filePath.toLowerCase().includes('certificado')) {
         return '/certificados/demo-certificado.pdf';
-      } else if (filePath.toLowerCase().includes('fispq')) {
-        return '/certificados/demo-fispq.pdf';
+      } else if (filePath.toLowerCase().includes('fdu')) {
+        return '/certificados/demo-fdu.pdf';
       } else {
         // Documento genérico de demonstração
         return '/certificados/demo-certificado.pdf';

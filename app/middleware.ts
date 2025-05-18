@@ -86,13 +86,13 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Químico só pode acessar /fispq e rotas públicas
+    // Químico só pode acessar /fdu e rotas públicas
     if (userType === 'quimico') {
-      // Se estiver na raiz, redirecionar para fispq
+      // Se estiver na raiz, redirecionar para fdu
       if (path === '/') {
-        return NextResponse.redirect(new URL('/fispq', request.url));
+        return NextResponse.redirect(new URL('/fdu', request.url));
       }
-      if (!path.startsWith('/fispq') && !publicRoutes.some(route => path.startsWith(route))) {
+      if (!path.startsWith('/fdu') && !publicRoutes.some(route => path.startsWith(route))) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
     }

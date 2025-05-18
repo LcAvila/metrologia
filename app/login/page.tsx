@@ -33,7 +33,7 @@ export default function LoginPage() {
           } else if (tipo === 'metrologista') {
             router.push('/metrologia');
           } else if (tipo === 'quimico') {
-            router.push('/fispq');
+            router.push('/fdu');
           } else {
             router.push('/unauthorized');
           }

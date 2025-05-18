@@ -10,11 +10,11 @@ import {
   HiPlus,
   HiSearch
 } from 'react-icons/hi';
-import { fispqService } from '../services/fispqService';
+import { fduService } from '../services/fduService';
 import { fichaEmergenciaService } from '../services/fichaEmergenciaService';
 
 interface DashboardStats {
-  fispq: {
+  fdu: {
     total: number;
     expirando: number;
     setores: number;
@@ -26,9 +26,9 @@ interface DashboardStats {
   };
 }
 
-const FISPQDashboard = () => {
+const FDUDashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({
-    fispq: { total: 0, expirando: 0, setores: 0 },
+    fdu: { total: 0, expirando: 0, setores: 0 },
     fichaEmergencia: { total: 0, expirando: 0, classesRisco: 0 }
   });
   const [loading, setLoading] = useState(true);
@@ -36,11 +36,11 @@ const FISPQDashboard = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const fispqStats = await fispqService.getStatistics();
+        const fduStats = await fduService.getStatistics();
         const fichaStats = await fichaEmergenciaService.getStatistics();
         
         setStats({
-          fispq: fispqStats,
+          fdu: fduStats,
           fichaEmergencia: fichaStats
         });
       } catch (error) {
@@ -79,6 +79,31 @@ const FISPQDashboard = () => {
     </motion.div>
   );
 
+  const FduCard = () => (
+    <motion.div 
+      className={`bg-blue-900/20 border border-blue-900/40 rounded-xl p-6`}
+      whileHover={{ y: -5 }}
+      transition={{ type: "spring", stiffness: 300 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-blue-300">FDUs</h3>
+        <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-300">
+          <HiDocumentText />
+        </div>
+      </div>
+      
+      <div className="flex flex-col">
+        <div className="flex items-baseline justify-between mb-1">
+          <p className="text-3xl font-bold text-white">{stats.fdu.total}</p>
+          <div className="px-2 py-1 rounded-full bg-blue-900/30 text-xs text-blue-300">
+            {stats.fdu.expirando} expirando
+          </div>
+        </div>
+        <p className="text-sm text-gray-400">{stats.fdu.setores} setores</p>
+      </div>
+    </motion.div>
+  );
+
   const ActionButton = ({ title, icon: Icon, onClick, color }: {
     title: string;
     icon: React.ElementType;
@@ -110,16 +135,16 @@ const FISPQDashboard = () => {
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
-          title="Total de FISPQs"
-          value={stats.fispq.total}
+          title="Total de FDUs"
+          value={stats.fdu.total}
           icon={HiBeaker}
           color="text-purple-400"
           subtitle="Documentos cadastrados"
         />
         
         <StatCard
-          title="FISPQs Expirando"
-          value={stats.fispq.expirando}
+          title="FDUs Expirando"
+          value={stats.fdu.expirando}
           icon={HiExclamation}
           color="text-yellow-400"
           subtitle="Vencendo em até 30 dias"
@@ -135,7 +160,7 @@ const FISPQDashboard = () => {
         
         <StatCard
           title="Setores Atendidos"
-          value={stats.fispq.setores}
+          value={stats.fdu.setores}
           icon={HiOfficeBuilding}
           color="text-blue-400"
           subtitle="Áreas com documentação"
@@ -144,30 +169,30 @@ const FISPQDashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <ActionButton
-          title="Nova FISPQ"
+          title="Nova FDU"
           icon={HiPlus}
-          onClick={() => window.location.href = '/fispq/cadastro'}
+          onClick={() => window.location.href = '/fdu/cadastro'}
           color="from-purple-900 to-purple-800 text-purple-400 border-purple-800"
         />
         
         <ActionButton
           title="Nova Ficha de Emergência"
           icon={HiPlus}
-          onClick={() => window.location.href = '/fispq/ficha-emergencia/cadastro'}
+          onClick={() => window.location.href = '/fdu/emergencia/cadastro'}
           color="from-green-900 to-green-800 text-green-400 border-green-800"
         />
         
         <ActionButton
-          title="Consultar FISPQ"
+          title="Consultar FDU"
           icon={HiSearch}
-          onClick={() => window.location.href = '/fispq/consulta'}
+          onClick={() => window.location.href = '/fdu/consulta'}
           color="from-blue-900 to-blue-800 text-blue-400 border-blue-800"
         />
         
         <ActionButton
           title="Relatórios"
           icon={HiChartPie}
-          onClick={() => window.location.href = '/fispq/relatorios'}
+          onClick={() => window.location.href = '/fdu/relatorios'}
           color="from-yellow-900 to-yellow-800 text-yellow-400 border-yellow-800"
         />
       </div>
@@ -175,4 +200,4 @@ const FISPQDashboard = () => {
   );
 };
 
-export default FISPQDashboard;
+export default FDUDashboard;

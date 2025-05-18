@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FichaEmergencia, FichaEmergenciaStatistics } from '../../fispq/types/fichaEmergencia';
-import { fichaEmergenciaService } from '../../fispq/services/fichaEmergenciaService';
+import { FichaEmergencia, FichaEmergenciaStatistics } from '../../fdu/types/fichaEmergencia';
+import { fichaEmergenciaService } from '../../fdu/services/fichaEmergenciaService';
 import { HiSearch, HiFilter, HiChevronDown, HiX, HiDocumentText, HiDownload, 
          HiRefresh, HiExclamationCircle } from 'react-icons/hi';
 import { HiExclamationTriangle } from 'react-icons/hi2';

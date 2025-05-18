@@ -1,4 +1,4 @@
-import { Equipamento, Certificado, FISPQ, FichaEmergencia } from '../types';
+import { Equipamento, Certificado, FDU, FichaEmergencia } from '../types';
 
 /**
  * Dados de teste (mock) utilizados apenas em ambiente de desenvolvimento
@@ -79,39 +79,39 @@ export const mockCertificados: Certificado[] = [
   }
 ];
 
-// Mock de FISPQs para testes
-export const mockFispqs: FISPQ[] = [
+// Mock de FDUs para testes
+export const mockFdus: FDU[] = [
   {
-    id: "FISPQ-001",
+    id: "FDU-001",
     produto: "Acetona",
     fabricante: "Química Brasil",
     numeroCas: "67-64-1",
     setor: "Almoxarifado 1 (ALM 1)",
     tipoRisco: "Inflamável",
     validade: "2025-07-15",
-    arquivoUrl: "/fispqs/acetona.pdf",
+    arquivoUrl: "/fdus/acetona.pdf",
     criadoEm: "2023-07-15"
   },
   {
-    id: "FISPQ-002",
+    id: "FDU-002",
     produto: "Hidróxido de Sódio",
     fabricante: "Química Industrial",
     numeroCas: "1310-73-2",
     setor: "Controle da Qualidade",
     tipoRisco: "Corrosivo",
     validade: "2025-08-20",
-    arquivoUrl: "/fispqs/hidroxido_sodio.pdf",
+    arquivoUrl: "/fdus/hidroxido_sodio.pdf",
     criadoEm: "2023-08-20"
   },
   {
-    id: "FISPQ-003",
+    id: "FDU-003",
     produto: "Álcool Isopropílico",
     fabricante: "Solventes SA",
     numeroCas: "67-63-0",
     setor: "Montagem 1 (M1)",
     tipoRisco: "Inflamável",
     validade: "2025-06-10",
-    arquivoUrl: "/fispqs/alcool_isopropilico.pdf",
+    arquivoUrl: "/fdus/alcool_isopropilico.pdf",
     criadoEm: "2023-06-10"
   }
 ];

@@ -1,42 +1,42 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FichaEmergencia } from '../types/fichaEmergencia';
-import { fichaEmergenciaService } from '../services/fichaEmergenciaService';
-import FichaEmergenciaCard from './FichaEmergenciaCard';
+import { FDU } from '../types/fdu';
+import { fduService } from '../services/fduService';
+import FDUCard from './FduCard';
 import { HiSearch, HiFilter, HiChevronDown, HiX } from 'react-icons/hi';
 
-interface FichaEmergenciaListProps {
+interface FDUListProps {
   isAdmin?: boolean;
   showFilters?: boolean;
   limit?: number;
 }
 
-const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = false, showFilters = true, limit }) => {
-  const [fichas, setFichas] = useState<FichaEmergencia[]>([]);
+const FDUList: React.FC<FDUListProps> = ({ isAdmin = false, showFilters = true, limit }) => {
+  const [fdus, setFdus] = useState<FDU[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
-    nome: '',
     produto: '',
-    numeroOnu: '',
-    classeRisco: ''
+    fabricante: '',
+    setor: '',
+    tipoRisco: ''
   });
 
   useEffect(() => {
-    loadFichas();
+    loadFDUs();
   }, []);
 
-  const loadFichas = async () => {
+  const loadFDUs = async () => {
     try {
       setLoading(true);
       let data;
       
       // Se o usuário for admin, usa o método normal, senão usa o método público
       if (isAdmin) {
-        data = await fichaEmergenciaService.list(filters);
+        data = await fduService.list(filters);
       } else {
-        data = await fichaEmergenciaService.publicList(filters);
+        data = await fduService.publicList(filters);
       }
       
       // Se houver um limite, aplica-o
@@ -44,27 +44,27 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
         data = data.slice(0, limit);
       }
       
-      setFichas(data);
+      setFdus(data);
     } catch (error) {
-      console.error('Erro ao carregar Fichas de Emergência:', error);
+      console.error('Erro ao carregar FDUs:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta Ficha de Emergência?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta FDU?')) {
       try {
-        await fichaEmergenciaService.delete(id);
-        loadFichas();
+        await fduService.delete(id);
+        loadFDUs();
       } catch (error) {
-        console.error('Erro ao excluir Ficha de Emergência:', error);
+        console.error('Erro ao excluir FDU:', error);
       }
     }
   };
 
   const handleEdit = (id: string) => {
-    window.location.href = `/fispq/ficha-emergencia/editar/${id}`;
+    window.location.href = `/fdu/editar/${id}`;
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -74,17 +74,17 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    loadFichas();
+    loadFDUs();
   };
 
-  const clearFilters = () => {
+  const applyFilters = () => {
+    loadFDUs();
     setFilters({
-      nome: '',
       produto: '',
-      numeroOnu: '',
-      classeRisco: ''
+      fabricante: '',
+      setor: '',
+      tipoRisco: ''
     });
-    setTimeout(() => loadFichas(), 0);
   };
 
   return (
@@ -93,7 +93,7 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
         <div className="bg-gray-900/70 border border-gray-800 rounded-xl p-5 overflow-hidden">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-white flex items-center gap-2">
-              <HiFilter className="text-purple-400" /> Filtros - Fichas de Emergência
+              <HiFilter className="text-blue-400" /> Filtros
             </h3>
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
@@ -113,17 +113,6 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
               <form onSubmit={handleSearch} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Nome da Ficha</label>
-                    <input
-                      type="text"
-                      name="nome"
-                      value={filters.nome}
-                      onChange={handleFilterChange}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
-                      placeholder="Nome da ficha"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm text-gray-400 mb-1">Produto</label>
                     <input
                       type="text"
@@ -135,25 +124,36 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Número ONU</label>
+                    <label className="block text-sm text-gray-400 mb-1">Fabricante</label>
                     <input
                       type="text"
-                      name="numeroOnu"
-                      value={filters.numeroOnu}
+                      name="fabricante"
+                      value={filters.fabricante}
                       onChange={handleFilterChange}
                       className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
-                      placeholder="Ex: 1203"
+                      placeholder="Nome do fabricante"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Classe de Risco</label>
+                    <label className="block text-sm text-gray-400 mb-1">Setor</label>
                     <input
                       type="text"
-                      name="classeRisco"
-                      value={filters.classeRisco}
+                      name="setor"
+                      value={filters.setor}
                       onChange={handleFilterChange}
                       className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
-                      placeholder="Ex: 3"
+                      placeholder="Setor de uso"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Tipo de Risco</label>
+                    <input
+                      type="text"
+                      name="tipoRisco"
+                      value={filters.tipoRisco}
+                      onChange={handleFilterChange}
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
+                      placeholder="Tipo de risco"
                     />
                   </div>
                 </div>
@@ -161,14 +161,14 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
-                    onClick={clearFilters}
+                    onClick={applyFilters}
                     className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg flex items-center gap-1"
                   >
                     <HiX /> Limpar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-1"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1"
                   >
                     <HiSearch /> Pesquisar
                   </button>
@@ -181,22 +181,21 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-12 h-12 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
-      ) : fichas.length === 0 ? (
+      ) : fdus.length === 0 ? (
         <div className="bg-gray-900/70 border border-gray-800 rounded-xl p-8 text-center">
-          <h3 className="text-xl text-gray-400">Nenhuma Ficha de Emergência encontrada</h3>
-          <p className="text-gray-500 mt-2">Tente ajustar os filtros ou cadastre novas fichas.</p>
+          <h3 className="text-xl text-gray-400">Nenhuma FDU encontrada</h3>
+          <p className="text-gray-500 mt-2">Tente ajustar os filtros ou cadastre novas FDUs.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {fichas.map(ficha => (
-            <FichaEmergenciaCard
-              key={ficha.id}
-              ficha={ficha}
-              onEdit={isAdmin ? handleEdit : undefined}
-              onDelete={isAdmin ? handleDelete : undefined}
+        <div className="space-y-4">
+          {fdus.map((fdu) => (
+            <FDUCard
+              key={fdu.id}
+              fdu={fdu}
               isAdmin={isAdmin}
+              onDelete={handleDelete}
             />
           ))}
         </div>
@@ -205,4 +204,4 @@ const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = fal
   );
 };
 
-export default FichaEmergenciaList;
+export default FDUList;

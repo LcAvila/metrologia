@@ -1,0 +1,197 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { fichaEmergenciaService } from '../services/fichaEmergenciaService';
+import { FichaEmergencia, FichaEmergenciaFilter } from '../types/fichaEmergencia';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../lib/supabaseClient';
+import { 
+  HiArrowLeft, 
+  HiShieldExclamation, 
+  HiUpload, 
+  HiX, 
+  HiCheck, 
+  HiExclamation, 
+  HiOfficeBuilding, 
+  HiTag,
+  HiCalendar,
+  HiUserCircle,
+  HiIdentification,
+  HiSearch,
+  HiFilter,
+  HiChevronLeft,
+  HiChevronDown,
+  HiDownload,
+  HiPencil,
+  HiTrash,
+  HiViewList,
+  HiPlus,
+  HiDocumentAdd,
+  HiOutlineClipboardCheck,
+  HiOutlineClock,
+  HiOutlineExclamation
+} from 'react-icons/hi';
+
+// Animações
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+};
+
+const slideIn = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemAnimation = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 }
+};
+
+export default function FichasEmergenciaPage() {
+  const router = useRouter();
+  
+  // Estados de usuário e autenticação
+  const [user, setUser] = useState<any>(null);
+  
+  // Estados do formulário
+  const [formData, setFormData] = useState({
+    nome: '',
+    produto: '',
+    numeroOnu: '',
+    classeRisco: '',
+    setor: '',
+    validade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Um ano a partir de hoje
+    arquivoUrl: '',
+    arquivo: null as File | null
+  });
+  
+  // Estados de feedback
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  
+  // Estados de listagem
+  const [fichas, setFichas] = useState<FichaEmergencia[]>([]);
+  const [filtros, setFiltros] = useState<FichaEmergenciaFilter>({});
+  
+  // Lista de setores predefinidos
+  const setores = [
+    'Pesquisa e Desenvolvimento',
+    'Injetoras',
+    'Ferramentaria',
+    'Controle da Qualidade',
+    'Point Matic',
+    'Montagem 1 (M1)',
+    'Montagem 2 (M2)',
+    'Almoxarifado 1 (ALM 1)',
+    'Almoxarifado 2 (ALM 2)',
+    'Depósito de Produtos Acabados (DPA)'
+  ];
+
+  // Verificar autenticação ao carregar a página
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    }
+    checkUser();
+  }, []);
+
+  // Buscar fichas ao carregar a página
+  useEffect(() => {
+    if (user) {
+      async function fetchFichas() {
+        try {
+          const data = await fichaEmergenciaService.list(filtros);
+          setFichas(data);
+        } catch (error: any) {
+          console.error("Erro ao buscar fichas de emergência:", error);
+        }
+      }
+      fetchFichas();
+    }
+  }, [filtros, user]);
+
+  // Renderização temporária enquanto corrigimos problemas estruturais
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="px-6 py-8 max-w-7xl mx-auto w-full">
+        {/* Cabeçalho */}
+        <div className="mb-8">
+          <div className="flex items-center mb-2">
+            <Link href="/fdu" className="text-gray-600 hover:text-indigo-600 flex items-center text-sm font-medium">
+              <HiArrowLeft className="mr-1 h-4 w-4" />
+              Voltar para FDU
+            </Link>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+            <HiShieldExclamation className="mr-3 h-8 w-8 text-indigo-600" />
+            Fichas de Emergência
+          </h1>
+          <p className="text-gray-500 mt-1">Gerenciamento de fichas de emergência para produtos químicos</p>
+        </div>
+
+        {/* Mensagem temporária */}
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <div className="flex items-center">
+            <HiOutlineExclamation className="h-6 w-6 text-blue-500 mr-3" />
+            <p className="text-blue-700">
+              Estamos realizando atualizações nesta página. A funcionalidade completa estará disponível em breve.
+            </p>
+          </div>
+        </div>
+
+        {/* Listagem simples de fichas caso existam */}
+        {fichas.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {fichas.map((ficha) => (
+              <div key={ficha.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-medium text-gray-800">{ficha.produto}</h3>
+                <p className="text-sm text-gray-500">Setor: {ficha.setor}</p>
+                {ficha.classeRisco && (
+                  <p className="text-sm text-gray-500">Classe de Risco: {ficha.classeRisco}</p>
+                )}
+                <div className="mt-4 flex justify-end space-x-2">
+                  {ficha.arquivoUrl && (
+                    <button 
+                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                      onClick={() => window.open(ficha.arquivoUrl, '_blank')}
+                    >
+                      <HiDownload className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10">
+            <HiOutlineExclamation className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-gray-600">Nenhuma ficha de emergência encontrada</h3>
+            <p className="text-gray-500 mt-1">Cadastre novas fichas ou ajuste seus filtros de busca</p>
+          </div>
+        )}
+      </div>
+
+      {/* Rodapé */}
+      <footer className="bg-gray-100 text-gray-600 py-4 mt-auto">
+        <div className="container mx-auto px-4 text-center text-sm">
+          {new Date().getFullYear()} - Sistema de Gerenciamento de FDUs
+        </div>
+      </footer>
+    </div>
+  );
+}

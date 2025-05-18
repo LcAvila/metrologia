@@ -15,7 +15,7 @@ import {
   HiChevronRight
 } from 'react-icons/hi';
 import { supabase } from '../lib/supabaseClient';
-import { fispqService } from './services/fispqService';
+import { fduService } from './services/fduService';
 import { fichaEmergenciaService } from './services/fichaEmergenciaService';
 
 const fadeIn = {
@@ -23,13 +23,13 @@ const fadeIn = {
   visible: { opacity: 1, y: 0 }
 };
 
-export default function FISPQPage() {
+export default function FDUPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    fispq: {
+    fdu: {
       total: 0,
       expirando: 0,
       vencidas: 0,
@@ -77,8 +77,8 @@ export default function FISPQPage() {
 
   async function loadDashboardData() {
     try {
-      // Buscar estatísticas de FISPQs
-      const allFispqs = await fispqService.list({});
+      // Buscar estatísticas de FDUs
+      const allFdus = await fduService.list({});
       
       let expiringCount = 0;
       let vencidasCount = 0;
@@ -87,9 +87,9 @@ export default function FISPQPage() {
       const oneMonthFromNow = new Date();
       oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
       
-      allFispqs.forEach(fispq => {        
+      allFdus.forEach(fdu => {        
         // Verificar status baseado na validade
-        const validadeDate = new Date(fispq.validade);
+        const validadeDate = new Date(fdu.validade);
         if (validadeDate < hoje) {
           vencidasCount++;
         } else if (validadeDate <= oneMonthFromNow) {
@@ -119,8 +119,8 @@ export default function FISPQPage() {
       
       // Atualizar estatísticas
       setStats({
-        fispq: {
-          total: allFispqs.length,
+        fdu: {
+          total: allFdus.length,
           expirando: expiringCount,
           vencidas: vencidasCount,
           validas: validasCount
@@ -166,7 +166,7 @@ export default function FISPQPage() {
             <HiBeaker className="text-xl" />
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            Painel FISPQ
+            Painel FDU
           </h1>
         </div>
 
@@ -210,7 +210,7 @@ export default function FISPQPage() {
             animate={fadeIn.visible}
             className="text-3xl font-bold text-white mb-2"
           >
-            Dashboard FISPQ
+            Dashboard FDU
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}
@@ -231,17 +231,17 @@ export default function FISPQPage() {
             className="bg-blue-900/20 border border-blue-900/50 rounded-xl p-5 flex flex-col"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-blue-300">FISPQs</h3>
+              <h3 className="text-lg font-medium text-blue-300">FDUs</h3>
               <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-300">
                 <HiDocumentText className="text-xl" />
               </div>
             </div>
             <div className="flex items-end justify-between">
-              <p className="text-3xl font-bold text-white">{stats.fispq.total}</p>
+              <p className="text-3xl font-bold text-white">{stats.fdu.total}</p>
               <div className="text-sm text-right">
-                <p className="text-green-400">{stats.fispq.validas} válidas</p>
-                <p className="text-yellow-400">{stats.fispq.expirando} expirando</p>
-                <p className="text-red-400">{stats.fispq.vencidas} vencidas</p>
+                <p className="text-green-400">{stats.fdu.validas} válidas</p>
+                <p className="text-yellow-400">{stats.fdu.expirando} expirando</p>
+                <p className="text-red-400">{stats.fdu.vencidas} vencidas</p>
               </div>
             </div>
           </motion.div>
@@ -282,15 +282,15 @@ export default function FISPQPage() {
             </div>
             <div className="flex-1 flex items-center justify-between gap-4">
               <div className="flex-1 bg-gray-800/50 rounded-lg p-3 text-center">
-                <p className="text-green-400 text-lg font-bold">{stats.fispq.validas + stats.fichaEmergencia.validas}</p>
+                <p className="text-green-400 text-lg font-bold">{stats.fdu.validas + stats.fichaEmergencia.validas}</p>
                 <p className="text-xs text-gray-400">Documentos Válidos</p>
               </div>
               <div className="flex-1 bg-gray-800/50 rounded-lg p-3 text-center">
-                <p className="text-yellow-400 text-lg font-bold">{stats.fispq.expirando + stats.fichaEmergencia.expirando}</p>
+                <p className="text-yellow-400 text-lg font-bold">{stats.fdu.expirando + stats.fichaEmergencia.expirando}</p>
                 <p className="text-xs text-gray-400">Expirando</p>
               </div>
               <div className="flex-1 bg-gray-800/50 rounded-lg p-3 text-center">
-                <p className="text-red-400 text-lg font-bold">{stats.fispq.vencidas + stats.fichaEmergencia.vencidas}</p>
+                <p className="text-red-400 text-lg font-bold">{stats.fdu.vencidas + stats.fichaEmergencia.vencidas}</p>
                 <p className="text-xs text-gray-400">Vencidos</p>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function FISPQPage() {
 
         {/* Cards de navegação */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <Link href="/fispq/fisqps">
+          <Link href="/fdu/fdu">
             <motion.div 
               initial={fadeIn.hidden}
               animate={fadeIn.visible}
@@ -315,7 +315,7 @@ export default function FISPQPage() {
                   <HiChevronRight />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">Gerenciar FISPQs</h3>
+              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">Gerenciar FDUs</h3>
               <p className="text-gray-400 mb-4">Cadastre, consulte, edite ou exclua fichas de segurança de produtos químicos</p>
               <div className="flex items-center text-sm text-blue-400 font-medium">
                 <span>Acessar módulo</span>
@@ -324,7 +324,7 @@ export default function FISPQPage() {
             </motion.div>
           </Link>
           
-          <Link href="/fispq/emergencia">
+          <Link href="/fdu/emergencia">
             <motion.div 
               initial={fadeIn.hidden}
               animate={fadeIn.visible}

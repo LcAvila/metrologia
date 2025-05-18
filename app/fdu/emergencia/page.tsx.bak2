@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { fispqService } from "../services/fispqService";
-import { FISPQ, FISPQFilter } from "../types/fispq";
+import { fduService } from "../services/fduService";
+import { FDU, FDUFilter } from "../types/fdu";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -19,21 +19,21 @@ const fadeIn = {
   visible: { opacity: 1, y: 0 }
 };
 
-type FISPQForm = Omit<FISPQ, 'id' | 'criadoEm' | 'validade'> & { validade: string; arquivo?: File | null };
+type FDUForm = Omit<FDU, 'id' | 'criadoEm' | 'validade'> & { validade: string; arquivo?: File | null };
 
-export default function FispqsPage() {
+export default function FdusPage() {
   const router = useRouter();
   
   // Estados do Formulário
-  const [form, setForm] = useState<Partial<FISPQForm>>({});
+  const [form, setForm] = useState<Partial<FDUForm>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   
   // Estados de Listagem
-  const [fispqs, setFispqs] = useState<FISPQ[]>([]);
-  const [filtros, setFiltros] = useState<FISPQFilter>({});
+  const [fdus, setFdus] = useState<FDU[]>([]);
+  const [filtros, setFiltros] = useState<FDUFilter>({});
   const [fetching, setFetching] = useState(false);
   
   // Estado de visualização
@@ -47,27 +47,28 @@ export default function FispqsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteItemName, setDeleteItemName] = useState('');
 
-  // Buscar FISPQs
-  const fetchFispqs = async () => {
+  // Buscar FDUs
+  const fetchFdus = async () => {
     setFetching(true);
     setError(null);
     try {
-      const data = await fispqService.list(filtros);
-      setFispqs(data || []);
+      const data = await fduService.list(filtros);
+      setFdus(data || []);
     } catch (e: any) {
-      setError(`Erro ao buscar FISPQs: ${e.message}`);
+      setError(`Erro ao buscar FDUs: ${e.message}`);
     } finally {
       setFetching(false);
     }
   };
   
   useEffect(() => { 
-    fetchFispqs(); 
+    fetchFdus(); 
   }, [filtros]);
   
   // Limpar filtros
   const clearFilters = () => {
     setFiltros({});
+    setTimeout(() => fetchFdus(), 0);
   };
 
   // Manipuladores de formulário
@@ -138,24 +139,23 @@ export default function FispqsPage() {
         return;
       }
       
-      await fispqService.create({
-        produto: form.produto,
-        fabricante: form.fabricante,
-        numeroCas: form.numeroCas,
-        setor: form.setor,
-        tipoRisco: form.tipoRisco,
-        validade: new Date(form.validade!),
-        arquivoUrl: "",
-      }, form.arquivo!);
+      if (isEditing && editingId) {
+        // Atualizando FDU existente
+        await fduService.update(editingId, form as any, form.arquivo || undefined);
+        setSuccess("FDU atualizada com sucesso!");
+      } else {
+        // Criando nova FDU
+        await fduService.create(form as any, form.arquivo as File);
+        setSuccess("FDU cadastrada com sucesso!");
+      }
       
-      setSuccess("FISPQ cadastrada com sucesso!");
       setForm({});
       setFilePreview(null);
       
       // Redirecionar após 2 segundos
       setTimeout(() => {
         setActiveTab("consulta");
-        fetchFispqs();
+        fetchFdus();
         setSuccess(null);
       }, 2000);
     } catch (e: any) {
@@ -178,7 +178,7 @@ export default function FispqsPage() {
   const changeTab = (tab: "cadastro" | "consulta") => {
     setActiveTab(tab);
     if (tab === "consulta") {
-      fetchFispqs();
+      fetchFdus();
     }
     // Limpar modo de edição ao trocar de aba
     if (isEditing) {
@@ -195,23 +195,21 @@ export default function FispqsPage() {
     setLoading(true);
     
     try {
-      const fispq = await fispqService.getById(id);
-      if (fispq) {
+      const fdu = await fduService.getById(id);
+      if (fdu) {
         setForm({
-          produto: fispq.produto,
-          fabricante: fispq.fabricante,
-          numeroCas: fispq.numeroCas,
-          setor: fispq.setor,
-          tipoRisco: fispq.tipoRisco,
-          validade: typeof fispq.validade === 'string' 
-            ? fispq.validade.substring(0, 10) 
-            : new Date(fispq.validade).toISOString().substring(0, 10)
+          produto: fdu.produto,
+          fabricante: fdu.fabricante,
+          numeroCas: fdu.numeroCas,
+          setor: fdu.setor,
+          tipoRisco: fdu.tipoRisco,
+          validade: new Date(fdu.validade).toISOString().split('T')[0],
         });
         setEditingId(id);
         setIsEditing(true);
         setActiveTab("cadastro");
       } else {
-        setError("FISPQ não encontrada");
+        setError("FDU não encontrada");
       }
     } catch (e: any) {
       setError(`Erro ao carregar dados para edição: ${e.message}`);
@@ -245,20 +243,9 @@ export default function FispqsPage() {
         return;
       }
       
-      await fispqService.update(
-        editingId,
-        {
-          produto: form.produto,
-          fabricante: form.fabricante,
-          numeroCas: form.numeroCas,
-          setor: form.setor,
-          tipoRisco: form.tipoRisco,
-          validade: new Date(form.validade!),
-        },
-        form.arquivo || undefined
-      );
+      await fduService.update(editingId, form as any, form.arquivo || undefined);
       
-      setSuccess("FISPQ atualizada com sucesso!");
+      setSuccess("FDU atualizada com sucesso!");
       setForm({});
       setFilePreview(null);
       setIsEditing(false);
@@ -267,7 +254,7 @@ export default function FispqsPage() {
       // Redirecionar após 2 segundos
       setTimeout(() => {
         setActiveTab("consulta");
-        fetchFispqs();
+        fetchFdus();
         setSuccess(null);
       }, 2000);
     } catch (e: any) {
@@ -297,9 +284,9 @@ export default function FispqsPage() {
     setError(null);
     
     try {
-      await fispqService.delete(deleteId);
-      setSuccess("FISPQ excluída com sucesso!");
-      fetchFispqs();
+      await fduService.delete(deleteId);
+      setSuccess("FDU excluída com sucesso!");
+      fetchFdus();
       cancelDelete();
       
       // Limpar mensagem de sucesso após 3 segundos
@@ -320,7 +307,7 @@ export default function FispqsPage() {
       <div className="bg-gray-800/80 backdrop-blur-lg border-b border-gray-700 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link 
-            href="/fispq" 
+            href="/fdu" 
             className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
           >
             <HiChevronLeft className="text-xl" />
@@ -392,12 +379,12 @@ export default function FispqsPage() {
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-white">
-                      {isEditing ? 'Editar FISPQ' : 'Cadastro de FISPQ'}
+                      {isEditing ? 'Editar FDU' : 'Cadastro de FDU'}
                     </h1>
                     <p className="text-gray-400">
                       {isEditing 
                         ? `Editando: ${form.produto || ''}` 
-                        : 'Preencha os dados para cadastrar uma nova FISPQ'}
+                        : 'Preencha os dados para cadastrar uma nova FDU'}
                     </p>
                   </div>
                 </div>
@@ -505,7 +492,7 @@ export default function FispqsPage() {
                   {/* Área de upload */}
                   <div className="mt-6">
                     <div className="border-t border-gray-700 pt-6">
-                      <label className="block text-sm font-medium mb-4 text-gray-300">Arquivo da FISPQ</label>
+                      <label className="block text-sm font-medium mb-4 text-gray-300">Arquivo da FDU</label>
                       
                       {filePreview ? (
                         <div className="border border-gray-600 rounded-lg p-4 bg-gray-800">
@@ -578,12 +565,12 @@ export default function FispqsPage() {
                       ) : isEditing ? (
                         <>
                           <HiPencil className="text-lg" />
-                          <span>Atualizar FISPQ</span>
+                          <span>Atualizar FDU</span>
                         </>
                       ) : (
                         <>
                           <HiDocumentAdd className="text-lg" />
-                          <span>Cadastrar FISPQ</span>
+                          <span>Cadastrar FDU</span>
                         </>
                       )}
                     </button>
@@ -605,8 +592,8 @@ export default function FispqsPage() {
                     <HiSearch className="text-3xl text-blue-400" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-white">Consulta de FISPQs</h1>
-                    <p className="text-gray-400">Visualize e filtre as FISPQs cadastradas</p>
+                    <h1 className="text-2xl font-bold text-white">Consulta de FDUs</h1>
+                    <p className="text-gray-400">Visualize e filtre as FDUs cadastradas</p>
                   </div>
                 </div>
                 <button
@@ -686,7 +673,7 @@ export default function FispqsPage() {
                 </motion.div>
               )}
               
-              {/* Tabela de FISPQs */}
+              {/* Tabela de FDUs */}
               <div className="bg-gray-800/50 border border-gray-700 rounded-xl shadow-lg">
                 {fetching ? (
                   <div className="p-12 flex justify-center items-center">
@@ -695,16 +682,16 @@ export default function FispqsPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <p className="text-gray-400">Carregando FISPQs...</p>
+                      <p className="text-gray-400">Carregando FDUs...</p>
                     </div>
                   </div>
                 ) : (
-                  fispqs.length === 0 ? (
+                  fdus.length === 0 ? (
                     <div className="p-12 flex justify-center items-center">
                       <div className="text-center">
                         <HiSearch className="text-5xl text-gray-600 mx-auto mb-4" />
                         <h3 className="text-xl font-medium text-gray-400 mb-2">Nenhum registro encontrado</h3>
-                        <p className="text-gray-500">Tente ajustar os filtros ou cadastre uma nova FISPQ</p>
+                        <p className="text-gray-500">Tente ajustar os filtros ou cadastre uma nova FDU</p>
                       </div>
                     </div>
                   ) : (
@@ -723,32 +710,32 @@ export default function FispqsPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
-                          {fispqs.map((f) => (
-                            <tr key={f.id} className="hover:bg-gray-700/40 transition-colors">
+                          {fdus.map((fdu) => (
+                            <tr key={fdu.id} className="hover:bg-gray-700/40 transition-colors">
                               <td className="p-4 whitespace-nowrap">
-                                <div className="font-medium text-white">{f.produto}</div>
+                                <div className="font-medium text-white">{fdu.produto}</div>
                               </td>
-                              <td className="p-4 whitespace-nowrap text-gray-300">{f.fabricante}</td>
-                              <td className="p-4 whitespace-nowrap text-gray-300">{f.numeroCas || '-'}</td>
+                              <td className="p-4 whitespace-nowrap text-gray-300">{fdu.fabricante}</td>
+                              <td className="p-4 whitespace-nowrap text-gray-300">{fdu.numeroCas || '-'}</td>
                               <td className="p-4 whitespace-nowrap">
                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-900/30 text-blue-300">
-                                  {f.setor}
+                                  {fdu.setor}
                                 </span>
                               </td>
                               <td className="p-4 whitespace-nowrap">
-                                {f.tipoRisco ? (
+                                {fdu.tipoRisco ? (
                                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900/30 text-yellow-300">
-                                    {f.tipoRisco}
+                                    {fdu.tipoRisco}
                                   </span>
                                 ) : '-'}
                               </td>
                               <td className="p-4 whitespace-nowrap text-gray-300">
-                                {new Date(f.validade).toLocaleDateString()}
+                                {new Date(fdu.validade).toLocaleDateString()}
                               </td>
                               <td className="p-4 whitespace-nowrap text-center">
-                                {f.arquivoUrl ? (
+                                {fdu.arquivoUrl ? (
                                   <a 
-                                    href={f.arquivoUrl} 
+                                    href={fdu.arquivoUrl} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center justify-center p-2 rounded-full bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 transition-colors"
@@ -761,16 +748,16 @@ export default function FispqsPage() {
                               <td className="p-4 whitespace-nowrap">
                                 <div className="flex items-center justify-center space-x-2">
                                   <button
-                                    onClick={() => startEdit(f.id)}
+                                    onClick={() => startEdit(fdu.id)}
                                     className="p-2 rounded-full bg-green-900/30 text-green-400 hover:bg-green-900/50 transition-colors"
-                                    title="Editar FISPQ"
+                                    title="Editar FDU"
                                   >
                                     <HiPencil className="text-lg" />
                                   </button>
                                   <button
-                                    onClick={() => startDelete(f.id, f.produto)}
+                                    onClick={() => startDelete(fdu.id, fdu.produto)}
                                     className="p-2 rounded-full bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors"
-                                    title="Excluir FISPQ"
+                                    title="Excluir FDU"
                                   >
                                     <HiTrash className="text-lg" />
                                   </button>
@@ -802,7 +789,7 @@ export default function FispqsPage() {
               <h3 className="text-xl font-semibold text-white">Confirmar exclusão</h3>
             </div>
             
-            <p className="text-gray-300 mb-2">Tem certeza que deseja excluir a FISPQ:</p>
+            <p className="text-gray-300 mb-2">Tem certeza que deseja excluir a FDU:</p>
             <p className="text-white font-medium mb-6 p-2 bg-gray-700/50 rounded border border-gray-600">{deleteItemName}</p>
             
             <div className="border-t border-gray-700 pt-5 flex justify-end space-x-3">

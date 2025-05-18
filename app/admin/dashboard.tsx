@@ -384,9 +384,9 @@ export default function DashboardPage() {
                 { label: 'Setores', value: stats.fispq.setores, icon: HiOfficeBuilding, color: 'text-indigo-400' }
               ]}
               actions={[
-                { label: 'Acessar Módulo', onClick: () => router.push('/fispq') },
-                { label: 'Nova FISPQ', onClick: () => router.push('/fispq/novo') },
-                { label: 'Nova Ficha', onClick: () => router.push('/fispq/ficha-emergencia/novo') }
+                { label: 'Acessar Módulo', onClick: () => router.push('/fdu') },
+                { label: 'Nova FDU', onClick: () => router.push('/fdu/novo') },
+                { label: 'Nova Ficha', onClick: () => router.push('/fdu/ficha-emergencia/novo') }
               ]}
             />
           </div>

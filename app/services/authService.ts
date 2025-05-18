@@ -145,7 +145,7 @@ export const authService = {
       case 'metrologista':
         return '/metrologia';
       case 'quimico':
-        return '/fispq';
+        return '/fdu';
       default:
         return '/';
     }

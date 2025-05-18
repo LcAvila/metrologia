@@ -1,15 +1,15 @@
-import { FISPQ, FISPQFilter } from '../types/fispq';
+import { FDU, FDUFilter } from '../types/fdu';
 import { supabase } from '../../lib/supabaseClient';
 import { storageService } from '../../services/storageService';
 import { calcularStatusData } from '../../utils/formatters';
 
-export const fispqService = {
+export const fduService = {
   // Método para uso público sem autenticação
-  async publicList(filter?: FISPQFilter) {
+  async publicList(filter?: FDUFilter) {
     try {
-      // Este método permite que usuários não autenticados vejam as FISPQs
+      // Este método permite que usuários não autenticados vejam as FDUs
       // A configuração de RLS no Supabase permitirá acesso público de leitura
-      let query = supabase.from('fispqs').select();
+      let query = supabase.from('fdus').select();
 
       if (filter) {
         if (filter.produto) {
@@ -39,12 +39,12 @@ export const fispqService = {
 
       const { data, error } = await query.order('criadoEm', { ascending: false });
       if (error) {
-        console.error('Erro ao buscar FISPQs públicas:', error.message);
-        throw new Error(`Falha ao buscar FISPQs: ${error.message}`);
+        console.error('Erro ao buscar FDUs públicas:', error.message);
+        throw new Error(`Falha ao buscar FDUs: ${error.message}`);
       }
       return data || [];
     } catch (err) {
-      console.error('Erro não tratado ao buscar FISPQs públicas:', err);
+      console.error('Erro não tratado ao buscar FDUs públicas:', err);
       return [];
     }
   },
@@ -52,17 +52,17 @@ export const fispqService = {
   async getPublicStatistics() {
     try {
       // Estatísticas disponíveis publicamente
-      const { data: totalFispqs, error: countError } = await supabase
-        .from('fispqs')
+      const { data: totalFdus, error: countError } = await supabase
+        .from('fdus')
         .select('id', { count: 'exact' });
 
       if (countError) {
-        console.error('Erro ao contar FISPQs:', countError.message);
+        console.error('Erro ao contar FDUs:', countError.message);
         throw new Error(`Falha ao obter estatísticas: ${countError.message}`);
       }
 
       const { data: setores, error: setoresError } = await supabase
-        .from('fispqs')
+        .from('fdus')
         .select('setor');
 
       if (setoresError) {
@@ -70,21 +70,21 @@ export const fispqService = {
         throw new Error(`Falha ao obter estatísticas de setores: ${setoresError.message}`);
       }
 
-      // Contar FISPQs expirando
+      // Contar FDUs expirando
       const today = new Date();
-      const { data: expiringFispqs, error: expiringError } = await supabase
-        .from('fispqs')
+      const { data: expiringFdus, error: expiringError } = await supabase
+        .from('fdus')
         .select('id, validade')
         .gte('validade', today.toISOString())
         .lte('validade', new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString());
 
       if (expiringError) {
-        console.error('Erro ao buscar FISPQs expirando:', expiringError.message);
+        console.error('Erro ao buscar FDUs expirando:', expiringError.message);
       }
 
       return {
-        total: totalFispqs?.length || 0,
-        expirando: expiringFispqs?.length || 0,
+        total: totalFdus?.length || 0,
+        expirando: expiringFdus?.length || 0,
         setores: setores ? [...new Set(setores.map(s => s.setor))].length : 0
       };
     } catch (err) {
@@ -93,11 +93,11 @@ export const fispqService = {
     }
   },
   
-  async create(fispq: Omit<FISPQ, 'id' | 'criadoEm'>, arquivo: File): Promise<FISPQ> {
+  async create(fdu: Omit<FDU, 'id' | 'criadoEm'>, arquivo: File): Promise<FDU> {
     try {
       // Verificar se o arquivo é válido
       if (!arquivo || arquivo.size === 0) {
-        throw new Error('É necessário anexar um arquivo PDF da FISPQ.');
+        throw new Error('É necessário anexar um arquivo PDF da FDU.');
       }
 
       // Verificar se o usuário está autenticado
@@ -107,7 +107,7 @@ export const fispqService = {
       }
       
       // Verificar se o bucket existe e criar se não existir
-      const bucketName = 'fisqps';
+      const bucketName = 'fdus';
       let exists = await storageService.bucketExists(bucketName);
       
       if (!exists) {
@@ -132,15 +132,15 @@ export const fispqService = {
       // Obter a URL pública do arquivo
       const arquivoUrl = storageService.getPublicUrl(bucketName, filePath);
         
-      // Remover o campo 'arquivo' do objeto fispq, se existir
+      // Remover o campo 'arquivo' do objeto fdu, se existir
       // pois ele não existe na tabela do banco de dados
-      const { arquivo: fileField, ...fispqData } = fispq as any;
+      const { arquivo: fileField, ...fduData } = fdu as any;
       
       // Salvar os dados no banco de dados
       const { data, error } = await supabase
-        .from('fispqs')
+        .from('fdus')
         .insert({
-          ...fispqData,
+          ...fduData,
           arquivoUrl,
           criadoEm: new Date().toISOString(),
           // Adicionar user_id para RLS
@@ -157,48 +157,48 @@ export const fispqService = {
         } catch (deleteError) {
           console.error('Erro ao excluir arquivo após falha no registro:', deleteError);
         }
-        throw new Error(`Erro ao salvar os dados: ${error.message}. Verifique se você tem permissões na tabela fispqs.`);
+        throw new Error(`Erro ao salvar os dados: ${error.message}. Verifique se você tem permissões na tabela fdus.`);
       }
       
       return data;
     } catch (error: any) {
-      console.error('Erro ao criar FISPQ:', error);
-      throw new Error(error.message || 'Erro desconhecido ao criar FISPQ');
+      console.error('Erro ao criar FDU:', error);
+      throw new Error(error.message || 'Erro desconhecido ao criar FDU');
     }
   },
 
-  async update(id: string, fispq: Partial<FISPQ>, arquivo?: File): Promise<FISPQ> {
+  async update(id: string, fdu: Partial<FDU>, arquivo?: File): Promise<FDU> {
     try {
       // Verificar se o id é válido
       if (!id) {
-        throw new Error('ID da FISPQ é obrigatório para atualização.');
+        throw new Error('ID da FDU é obrigatório para atualização.');
       }
 
       // Obter o registro atual para preservar a URL do arquivo se necessário
-      const { data: existingFispq, error: fetchError } = await supabase
-        .from('fispqs')
+      const { data: existingFdu, error: fetchError } = await supabase
+        .from('fdus')
         .select('arquivoUrl')
         .eq('id', id)
         .single();
 
       if (fetchError) {
-        throw new Error(`FISPQ não encontrada: ${fetchError.message}`);
+        throw new Error(`FDU não encontrada: ${fetchError.message}`);
       }
 
-      let arquivoUrl = existingFispq.arquivoUrl;
+      let arquivoUrl = existingFdu.arquivoUrl;
 
       // Processar novo arquivo se fornecido
       if (arquivo && arquivo.size > 0) {  
         // Verificar se o bucket existe
-        const bucketName = 'fisqps';
+        const bucketName = 'fdus';
         const exists = await storageService.bucketExists(bucketName);
         if (!exists) {
-          throw new Error('O bucket fisqps não existe. Por favor, contate o administrador.');
+          throw new Error('O bucket fdus não existe. Por favor, contate o administrador.');
         }
         
         // Gerar um nome de arquivo único
         const timestamp = new Date().getTime();
-        const productName = fispq.produto || 'fispq';
+        const productName = fdu.produto || 'fdu';
         const fileName = `${productName.replace(/\s+/g, '_')}_${timestamp}.pdf`;
         
         // Fazer upload do novo arquivo usando o serviço unificado
@@ -208,10 +208,10 @@ export const fispqService = {
         arquivoUrl = storageService.getPublicUrl(bucketName, filePath);
         
         // Tentar remover o arquivo antigo se existir
-        if (existingFispq.arquivoUrl) {
+        if (existingFdu.arquivoUrl) {
           try {
             // Extrair o caminho do arquivo da URL
-            const oldFilePathMatch = existingFispq.arquivoUrl.match(/fisqps\/(.*?)(?:\?|$)/);
+            const oldFilePathMatch = existingFdu.arquivoUrl.match(/fdus\/(.*?)(?:\?|$)/);
             if (oldFilePathMatch && oldFilePathMatch[1]) {
               await storageService.removeFile(bucketName, oldFilePathMatch[1]);
             }
@@ -224,52 +224,52 @@ export const fispqService = {
 
       // Atualizar registro
       const { data, error } = await supabase
-        .from('fispqs')
-        .update({ ...fispq, arquivoUrl })
+        .from('fdus')
+        .update({ ...fdu, arquivoUrl })
         .eq('id', id)
         .select()
         .single();
 
       if (error) {
-        throw new Error(`Erro ao atualizar FISPQ: ${error.message}`);
+        throw new Error(`Erro ao atualizar FDU: ${error.message}`);
       }
       
       return data;
     } catch (error: any) {
-      console.error('Erro ao atualizar FISPQ:', error);
-      throw new Error(error.message || 'Erro desconhecido ao atualizar FISPQ');
+      console.error('Erro ao atualizar FDU:', error);
+      throw new Error(error.message || 'Erro desconhecido ao atualizar FDU');
     }
   },
 
   async delete(id: string): Promise<void> {
     try {
       // Obter o registro atual para obter o arquivo relacionado
-      const { data: fispq, error: fetchError } = await supabase
-        .from('fispqs')
+      const { data: fdu, error: fetchError } = await supabase
+        .from('fdus')
         .select('arquivoUrl')
         .eq('id', id)
         .single();
 
       if (fetchError) {
-        throw new Error(`FISPQ não encontrada: ${fetchError.message}`);
+        throw new Error(`FDU não encontrada: ${fetchError.message}`);
       }
 
       // Excluir o registro do banco de dados
       const { error } = await supabase
-        .from('fispqs')
+        .from('fdus')
         .delete()
         .eq('id', id);
 
       if (error) {
-        throw new Error(`Erro ao excluir FISPQ: ${error.message}`);
+        throw new Error(`Erro ao excluir FDU: ${error.message}`);
       }
 
       // Tentar excluir o arquivo associado
-      if (fispq.arquivoUrl) {
+      if (fdu.arquivoUrl) {
         try {
           // Extrair o caminho do arquivo da URL
-          const bucketName = 'fisqps';
-          const filePathMatch = fispq.arquivoUrl.match(/fisqps\/(.*?)(?:\?|$)/);
+          const bucketName = 'fdus';
+          const filePathMatch = fdu.arquivoUrl.match(/fdus\/(.*?)(?:\?|$)/);
           
           if (filePathMatch && filePathMatch[1]) {
             await storageService.removeFile(bucketName, filePathMatch[1]);
@@ -280,19 +280,19 @@ export const fispqService = {
         }
       }
     } catch (error: any) {
-      console.error('Erro ao excluir FISPQ:', error);
-      throw new Error(error.message || 'Erro desconhecido ao excluir FISPQ');
+      console.error('Erro ao excluir FDU:', error);
+      throw new Error(error.message || 'Erro desconhecido ao excluir FDU');
     }
   },
 
-  async getById(id: string): Promise<FISPQ | null> {
+  async getById(id: string): Promise<FDU | null> {
     try {
       if (!id) {
-        throw new Error('ID da FISPQ é obrigatório');
+        throw new Error('ID da FDU é obrigatório');
       }
       
       const { data, error } = await supabase
-        .from('fispqs')
+        .from('fdus')
         .select()
         .eq('id', id)
         .single();
@@ -301,19 +301,19 @@ export const fispqService = {
         if (error.code === 'PGRST116') { // Código para 'não encontrado'
           return null;
         }
-        throw new Error(`Erro ao buscar FISPQ: ${error.message}`);
+        throw new Error(`Erro ao buscar FDU: ${error.message}`);
       }
       
       return data;
     } catch (error: any) {
-      console.error('Erro ao buscar FISPQ por ID:', error);
-      throw new Error(error.message || 'Erro desconhecido ao buscar FISPQ');
+      console.error('Erro ao buscar FDU por ID:', error);
+      throw new Error(error.message || 'Erro desconhecido ao buscar FDU');
     }
   },
 
-  async list(filter?: FISPQFilter) {
+  async list(filter?: FDUFilter) {
     try {
-      let query = supabase.from('fispqs').select();
+      let query = supabase.from('fdus').select();
 
       if (filter) {
         if (filter.produto) {
@@ -343,19 +343,19 @@ export const fispqService = {
 
       const { data, error } = await query.order('criadoEm', { ascending: false });
       if (error) {
-        throw new Error(`Erro ao listar FISPQs: ${error.message}`);
+        throw new Error(`Erro ao listar FDUs: ${error.message}`);
       }
       
-      // Calcular status baseado na validade para cada FISPQ
-      const fispqsWithStatus = data?.map(fispq => ({
-        ...fispq,
-        status: calcularStatusData(fispq.validade)
+      // Calcular status baseado na validade para cada FDU
+      const fdusWithStatus = data?.map(fdu => ({
+        ...fdu,
+        status: calcularStatusData(fdu.validade)
       })) || [];
       
-      return fispqsWithStatus;
+      return fdusWithStatus;
     } catch (error: any) {
-      console.error('Erro ao listar FISPQs:', error);
-      throw new Error(error.message || 'Erro desconhecido ao listar FISPQs');
+      console.error('Erro ao listar FDUs:', error);
+      throw new Error(error.message || 'Erro desconhecido ao listar FDUs');
     }
   },
 
@@ -364,42 +364,42 @@ export const fispqService = {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Obter total de FISPQs
-      const { data: totalFispqs, error: countError } = await supabase
-        .from('fispqs')
+      // Obter total de FDUs
+      const { data: totalFdus, error: countError } = await supabase
+        .from('fdus')
         .select('id', { count: 'exact' });
 
       if (countError) {
-        throw new Error(`Erro ao contar FISPQs: ${countError.message}`);
+        throw new Error(`Erro ao contar FDUs: ${countError.message}`);
       }
 
-      // Obter FISPQs expirando em 30 dias
+      // Obter FDUs expirando em 30 dias
       const thirtyDaysLater = new Date(today);
       thirtyDaysLater.setDate(today.getDate() + 30);
       
-      const { data: expiringFispqs, error: expiringError } = await supabase
-        .from('fispqs')
+      const { data: expiringFdus, error: expiringError } = await supabase
+        .from('fdus')
         .select('id, validade')
         .gte('validade', today.toISOString())
         .lte('validade', thirtyDaysLater.toISOString());
 
       if (expiringError) {
-        throw new Error(`Erro ao buscar FISPQs expirando: ${expiringError.message}`);
+        throw new Error(`Erro ao buscar FDUs expirando: ${expiringError.message}`);
       }
 
-      // Obter FISPQs vencidas
-      const { data: expiredFispqs, error: expiredError } = await supabase
-        .from('fispqs')
+      // Obter FDUs vencidas
+      const { data: expiredFdus, error: expiredError } = await supabase
+        .from('fdus')
         .select('id')
         .lt('validade', today.toISOString());
 
       if (expiredError) {
-        throw new Error(`Erro ao buscar FISPQs vencidas: ${expiredError.message}`);
+        throw new Error(`Erro ao buscar FDUs vencidas: ${expiredError.message}`);
       }
 
       // Obter setores e fabricantes para estatísticas
       const { data: setores, error: setoresError } = await supabase
-        .from('fispqs')
+        .from('fdus')
         .select('setor, fabricante');
 
       if (setoresError) {
@@ -411,9 +411,9 @@ export const fispqService = {
       const uniqueFabricantes = setores ? [...new Set(setores.map(s => s.fabricante))] : [];
 
       return {
-        total: totalFispqs?.length || 0,
-        expirando: expiringFispqs?.length || 0,
-        vencidas: expiredFispqs?.length || 0,
+        total: totalFdus?.length || 0,
+        expirando: expiringFdus?.length || 0,
+        vencidas: expiredFdus?.length || 0,
         setores: uniqueSetores.length,
         setoresLista: uniqueSetores,
         fabricantes: uniqueFabricantes.length,

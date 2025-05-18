@@ -1,0 +1,1138 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { fichaEmergenciaService } from '../services/fichaEmergenciaService';
+import { FichaEmergencia, FichaEmergenciaFilter, FichaEmergenciaFormData } from '../types/fichaEmergencia';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../lib/supabaseClient';
+import { 
+  HiArrowLeft, 
+  HiShieldExclamation, 
+  HiUpload, 
+  HiX, 
+  HiCheck, 
+  HiExclamation, 
+  HiOfficeBuilding, 
+  HiTag,
+  HiCalendar,
+  HiUserCircle,
+  HiIdentification,
+  HiSearch,
+  HiFilter,
+  HiChevronLeft,
+  HiChevronDown,
+  HiDownload,
+  HiPencil,
+  HiTrash,
+  HiViewList,
+  HiPlus,
+  HiDocumentAdd,
+  HiOutlineClipboardCheck,
+  HiOutlineClock,
+  HiOutlineExclamation,
+  HiEye
+} from 'react-icons/hi';
+
+// Animações
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+};
+
+const slideIn = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemAnimation = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 }
+};
+
+// Modal de Exclusão
+interface DeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  loading: boolean;
+}
+
+function DeleteModal({ isOpen, onClose, onConfirm, title, message, loading }: DeleteModalProps) {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity" onClick={onClose}>
+          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen"></span>
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+        >
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <HiExclamation className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">{title}</h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">{message}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={onConfirm}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              {loading ? 'Excluindo...' : 'Excluir'}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={onClose}
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cancelar
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// Modal de Visualização de PDF
+interface ViewPdfModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  fileUrl: string | null;
+}
+
+function ViewPdfModal({ isOpen, onClose, fileUrl }: ViewPdfModalProps) {
+  if (!isOpen || !fileUrl) return null;
+  
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity" onClick={onClose}>
+          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen"></span>
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full"
+        >
+          <div className="flex justify-between items-center bg-gray-100 px-4 py-2">
+            <h3 className="text-lg font-medium text-gray-900">Visualização do Documento</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            >
+              <HiX className="h-6 w-6" />
+            </button>
+          </div>
+          <div className="bg-white p-4 h-[70vh] overflow-auto">
+            <iframe 
+              src={fileUrl} 
+              className="w-full h-full" 
+              title="Visualização do PDF" 
+            />
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <a
+              href={fileUrl}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              <HiDownload className="mr-2 h-5 w-5" />
+              Baixar Arquivo
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Fechar
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// Componente de Formulário
+interface FormularioFichaProps {
+  formData: FichaEmergenciaFormData;
+  isEditing: boolean;
+  loading: boolean;
+  filePreview: string | null;
+  classesRisco: string[];
+  setores: string[];
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  handleDateChange: (date: Date) => void;
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSubmit: (e: React.FormEvent) => void;
+  cancelEdit: () => void;
+}
+
+function FormularioFicha({
+  formData,
+  isEditing,
+  loading,
+  filePreview,
+  classesRisco,
+  setores,
+  handleInputChange,
+  handleDateChange,
+  handleFileChange,
+  handleSubmit,
+  cancelEdit
+}: FormularioFichaProps) {
+  return (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+      className="bg-gray-800/50 border border-gray-700/80 rounded-lg p-6"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Nome da Ficha */}
+          <div>
+            <label htmlFor="nome" className="block text-sm font-medium text-gray-200 mb-1">
+              Nome da Ficha <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              id="nome"
+              name="nome"
+              value={formData.nome}
+              onChange={handleInputChange}
+              className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              placeholder="Ex: Ficha do Álcool Isopropílico"
+              required
+            />
+          </div>
+
+          {/* Produto */}
+          <div>
+            <label htmlFor="produto" className="block text-sm font-medium text-gray-200 mb-1">
+              Produto <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              id="produto"
+              name="produto"
+              value={formData.produto}
+              onChange={handleInputChange}
+              className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              placeholder="Ex: Álcool Isopropílico"
+              required
+            />
+          </div>
+
+          {/* Número ONU */}
+          <div>
+            <label htmlFor="numeroOnu" className="block text-sm font-medium text-gray-200 mb-1">
+              Número ONU
+            </label>
+            <input
+              type="text"
+              id="numeroOnu"
+              name="numeroOnu"
+              value={formData.numeroOnu}
+              onChange={handleInputChange}
+              className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              placeholder="Ex: 1219"
+            />
+          </div>
+
+          {/* Classe de Risco */}
+          <div>
+            <label htmlFor="classeRisco" className="block text-sm font-medium text-gray-200 mb-1">
+              Classe de Risco
+            </label>
+            <select
+              id="classeRisco"
+              name="classeRisco"
+              value={formData.classeRisco}
+              onChange={handleInputChange}
+              className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+            >
+              <option value="">Selecione uma classe de risco</option>
+              {classesRisco.map((classe) => (
+                <option key={classe} value={classe}>
+                  {classe}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Setor */}
+          <div>
+            <label htmlFor="setor" className="block text-sm font-medium text-gray-200 mb-1">
+              Setor <span className="text-red-400">*</span>
+            </label>
+            <select
+              id="setor"
+              name="setor"
+              value={formData.setor}
+              onChange={handleInputChange}
+              className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              required
+            >
+              <option value="">Selecione um setor</option>
+              {setores.map((setor) => (
+                <option key={setor} value={setor}>
+                  {setor}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Validade */}
+          <div>
+            <label htmlFor="validade" className="block text-sm font-medium text-gray-200 mb-1">
+              Validade <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="date"
+              id="validade"
+              name="validade"
+              value={formData.validade instanceof Date ? formData.validade.toISOString().split('T')[0] : formData.validade.toString()}
+              onChange={(e) => handleDateChange(new Date(e.target.value))}
+              className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              required
+            />
+          </div>
+
+          {/* Arquivo */}
+          <div className="md:col-span-2">
+            <label htmlFor="arquivo" className="block text-sm font-medium text-gray-200 mb-1">
+              Arquivo PDF {!isEditing && <span className="text-red-400">*</span>}
+            </label>
+            
+            {/* Input de arquivo */}
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-md bg-gray-900/30">
+              <div className="space-y-1 text-center">
+                {filePreview ? (
+                  <div className="relative mx-auto w-24 h-24 mb-4">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-md">
+                      <HiDocumentAdd className="h-12 w-12 text-blue-400" />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => window.open(filePreview, '_blank')}
+                      className="absolute top-0 right-0 -mt-2 -mr-2 bg-blue-500 rounded-full p-1"
+                    >
+                      <HiEye className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <HiUpload className="mx-auto h-12 w-12 text-gray-500" />
+                )}
+                <div className="flex justify-center text-sm text-gray-400">
+                  <label
+                    htmlFor="arquivo-upload"
+                    className="relative cursor-pointer rounded-md font-medium text-blue-400 hover:text-blue-300 focus-within:outline-none"
+                  >
+                    <span>{formData.arquivo ? 'Alterar arquivo' : 'Selecionar arquivo'}</span>
+                    <input
+                      id="arquivo-upload"
+                      name="arquivo"
+                      type="file"
+                      accept=".pdf"
+                      className="sr-only"
+                      onChange={handleFileChange}
+                      required={!isEditing && !formData.arquivoUrl}
+                    />
+                  </label>
+                  <p className="pl-1">{formData.arquivo ? formData.arquivo.name : 'ou arraste e solte aqui'}</p>
+                </div>
+                <p className="text-xs text-gray-500">PDF até 10MB</p>
+
+                {/* Mostrar arquivo atual */}
+                {isEditing && formData.arquivoUrl && !formData.arquivo && (
+                  <div className="mt-2 text-sm">
+                    <p className="text-gray-400">Arquivo atual: 
+                      <span className="text-blue-400 hover:text-blue-300 cursor-pointer ml-1"
+                        onClick={() => window.open(formData.arquivoUrl, '_blank')}
+                      >
+                        Visualizar
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Botões */}
+        <div className="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            onClick={cancelEdit}
+            disabled={loading}
+            className="px-4 py-2 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 flex items-center"
+          >
+            {loading ? (
+              <>Salvando...<div className="ml-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div></>
+            ) : (
+              <>{isEditing ? 'Atualizar' : 'Cadastrar'}</>
+            )}
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  );
+}
+
+// Componente de Consulta de Fichas
+interface ConsultaFichasProps {
+  fichas: FichaEmergencia[];
+  loading: boolean;
+  filtros: FichaEmergenciaFilter;
+  showFilters: boolean;
+  toggleFilters: () => void;
+  handleFilterChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  clearFilters: () => void;
+  startEdit: (id: string) => void;
+  confirmDelete: (id: string, nome: string) => void;
+  openViewModal: (url: string) => void;
+  setores: string[];
+  classesRisco: string[];
+}
+
+function ConsultaFichas({
+  fichas,
+  loading,
+  filtros,
+  showFilters,
+  toggleFilters,
+  handleFilterChange,
+  clearFilters,
+  startEdit,
+  confirmDelete,
+  openViewModal,
+  setores,
+  classesRisco
+}: ConsultaFichasProps) {
+  return (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+      className="space-y-6"
+    >
+      {/* Painel de filtros e ações */}
+      <div className="flex items-center justify-between">
+        <div className="flex space-x-2">
+          <button
+            type="button"
+            onClick={toggleFilters}
+            className={`flex items-center px-3 py-2 rounded-lg ${showFilters ? 'bg-blue-600/40 text-blue-300' : 'bg-blue-600/20 text-gray-300 hover:bg-blue-600/30'}`}
+          >
+            <HiFilter className="h-4 w-4 mr-2" />
+            {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          </button>
+        </div>
+        <div>
+          <span className="text-sm text-gray-400">
+            Total: <span className="text-blue-400 font-medium">{fichas.length}</span> {fichas.length === 1 ? 'ficha' : 'fichas'}
+          </span>
+        </div>
+      </div>
+      
+      {/* Painel de filtros */}
+      {showFilters && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="border border-gray-700/60 rounded-lg bg-gray-800/50 p-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* Filtro por nome */}
+            <div>
+              <label htmlFor="filtro-nome" className="block text-sm font-medium text-gray-300 mb-1">
+                Nome da Ficha
+              </label>
+              <input
+                type="text"
+                id="filtro-nome"
+                name="nome"
+                value={filtros.nome || ''}
+                onChange={handleFilterChange}
+                className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+                placeholder="Buscar por nome"
+              />
+            </div>
+            
+            {/* Filtro por produto */}
+            <div>
+              <label htmlFor="filtro-produto" className="block text-sm font-medium text-gray-300 mb-1">
+                Produto
+              </label>
+              <input
+                type="text"
+                id="filtro-produto"
+                name="produto"
+                value={filtros.produto || ''}
+                onChange={handleFilterChange}
+                className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+                placeholder="Buscar por produto"
+              />
+            </div>
+            
+            {/* Filtro por Número ONU */}
+            <div>
+              <label htmlFor="filtro-numeroOnu" className="block text-sm font-medium text-gray-300 mb-1">
+                Número ONU
+              </label>
+              <input
+                type="text"
+                id="filtro-numeroOnu"
+                name="numeroOnu"
+                value={filtros.numeroOnu || ''}
+                onChange={handleFilterChange}
+                className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+                placeholder="Ex: 1219"
+              />
+            </div>
+            
+            {/* Filtro por Classe de Risco */}
+            <div>
+              <label htmlFor="filtro-classeRisco" className="block text-sm font-medium text-gray-300 mb-1">
+                Classe de Risco
+              </label>
+              <select
+                id="filtro-classeRisco"
+                name="classeRisco"
+                value={filtros.classeRisco || ''}
+                onChange={handleFilterChange}
+                className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              >
+                <option value="">Todas as classes</option>
+                {classesRisco.map((classe) => (
+                  <option key={classe} value={classe}>
+                    {classe}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Filtro por Setor */}
+            <div>
+              <label htmlFor="filtro-setor" className="block text-sm font-medium text-gray-300 mb-1">
+                Setor
+              </label>
+              <select
+                id="filtro-setor"
+                name="setor"
+                value={filtros.setor || ''}
+                onChange={handleFilterChange}
+                className="shadow-sm bg-gray-900/70 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-700 rounded-md text-white"
+              >
+                <option value="">Todos os setores</option>
+                {setores.map((setor) => (
+                  <option key={setor} value={setor}>
+                    {setor}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center px-3 py-2 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+            >
+              <HiX className="mr-2 h-4 w-4" />
+              Limpar Filtros
+            </button>
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Lista de fichas */}
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-3 text-blue-400 font-medium">Carregando...</span>
+        </div>
+      ) : fichas.length > 0 ? (
+        <motion.div 
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {fichas.map((ficha) => (
+            <motion.div 
+              key={ficha.id} 
+              variants={itemAnimation}
+              className="bg-gray-800/50 border border-gray-700/80 rounded-lg overflow-hidden hover:bg-gray-800/80 transition-colors"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-medium text-white line-clamp-2">{ficha.nome}</h3>
+                  
+                  {/* Menu de opções */}
+                  <div className="flex space-x-1">
+                    <button 
+                      onClick={() => openViewModal(ficha.arquivoUrl)}
+                      className="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded-full transition-colors"
+                      title="Visualizar"
+                    >
+                      <HiEye className="h-5 w-5" />
+                    </button>
+                    <button 
+                      onClick={() => startEdit(ficha.id)}
+                      className="p-1.5 text-green-400 hover:bg-green-900/30 rounded-full transition-colors"
+                      title="Editar"
+                    >
+                      <HiPencil className="h-5 w-5" />
+                    </button>
+                    <button 
+                      onClick={() => confirmDelete(ficha.id, ficha.nome)}
+                      className="p-1.5 text-red-400 hover:bg-red-900/30 rounded-full transition-colors"
+                      title="Excluir"
+                    >
+                      <HiTrash className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <p className="flex items-center text-gray-300">
+                    <HiTag className="h-4 w-4 mr-2 text-blue-400" />
+                    <span className="text-gray-400 font-medium">Produto:</span> 
+                    <span className="ml-1">{ficha.produto}</span>
+                  </p>
+                  
+                  {ficha.numeroOnu && (
+                    <p className="flex items-center text-gray-300">
+                      <HiIdentification className="h-4 w-4 mr-2 text-blue-400" />
+                      <span className="text-gray-400 font-medium">Número ONU:</span> 
+                      <span className="ml-1">{ficha.numeroOnu}</span>
+                    </p>
+                  )}
+                  
+                  {ficha.classeRisco && (
+                    <p className="flex items-center text-gray-300">
+                      <HiExclamation className="h-4 w-4 mr-2 text-blue-400" />
+                      <span className="text-gray-400 font-medium">Classe de Risco:</span> 
+                      <span className="ml-1">{ficha.classeRisco}</span>
+                    </p>
+                  )}
+                  
+                  {ficha.setor && (
+                    <p className="flex items-center text-gray-300">
+                      <HiOfficeBuilding className="h-4 w-4 mr-2 text-blue-400" />
+                      <span className="text-gray-400 font-medium">Setor:</span> 
+                      <span className="ml-1">{ficha.setor}</span>
+                    </p>
+                  )}
+                  
+                  <p className="flex items-center text-gray-300">
+                    <HiCalendar className="h-4 w-4 mr-2 text-blue-400" />
+                    <span className="text-gray-400 font-medium">Validade:</span>
+                    <span className="ml-1">
+                      {ficha.validade instanceof Date 
+                      ? ficha.validade.toLocaleDateString('pt-BR')
+                      : new Date(ficha.validade).toLocaleDateString('pt-BR')}
+                    </span>
+                  </p>
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <a 
+                    href={ficha.arquivoUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+                  >
+                    <HiDownload className="mr-2 h-4 w-4" />
+                    Baixar
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      ) : (
+        <div className="bg-gray-800/50 border border-gray-700/80 rounded-lg p-8 text-center">
+          <HiOutlineExclamation className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-200">Nenhuma ficha de emergência encontrada</h3>
+          <p className="text-gray-400 mt-1 mb-4">Cadastre novas fichas ou ajuste seus filtros de busca</p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+export default function FichasEmergenciaPage() {
+  const router = useRouter();
+  
+  // Estados de usuário e autenticação
+  const [user, setUser] = useState<any>(null);
+  
+  // Estado para visualização de abas
+  const [activeTab, setActiveTab] = useState<'cadastro' | 'consulta'>('consulta');
+  
+  // Estados para modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedItemName, setSelectedItemName] = useState('');
+  
+  // Estados de edição
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // Estados do formulário
+  const [formData, setFormData] = useState<FichaEmergenciaFormData>({
+    nome: '',
+    produto: '',
+    numeroOnu: '',
+    classeRisco: '',
+    setor: '',
+    validade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Um ano a partir de hoje
+    arquivoUrl: '',
+    arquivo: null
+  });
+  
+  // Estados de feedback
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  
+  // Estados de listagem
+  const [fichas, setFichas] = useState<FichaEmergencia[]>([]);
+  const [filtros, setFiltros] = useState<FichaEmergenciaFilter>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  
+  // Lista de setores predefinidos
+  const setores = [
+    'Pesquisa e Desenvolvimento',
+    'Injetoras',
+    'Ferramentaria',
+    'Controle da Qualidade',
+    'Point Matic',
+    'Montagem 1 (M1)',
+    'Montagem 2 (M2)',
+    'Almoxarifado 1 (ALM 1)',
+    'Almoxarifado 2 (ALM 2)',
+    'Depósito de Produtos Acabados (DPA)'
+  ];
+  
+  // Lista de classes de risco
+  const classesRisco = [
+    'Classe 1 - Explosivos',
+    'Classe 2 - Gases',
+    'Classe 3 - Líquidos Inflamáveis',
+    'Classe 4 - Sólidos Inflamáveis',
+    'Classe 5 - Substâncias Oxidantes',
+    'Classe 6 - Substâncias Tóxicas',
+    'Classe 7 - Materiais Radioativos',
+    'Classe 8 - Substâncias Corrosivas', 
+    'Classe 9 - Substâncias Perigosas Diversas'
+  ];
+
+  // Verificar autenticação ao carregar a página
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    }
+    checkUser();
+  }, []);
+
+  // Buscar fichas ao carregar a página ou mudar filtros
+  useEffect(() => {
+    if (user) {
+      fetchFichas();
+    }
+  }, [filtros, user]);
+  
+  // Função para buscar fichas de emergência
+  async function fetchFichas() {
+    setLoading(true);
+    try {
+      const data = await fichaEmergenciaService.list(filtros);
+      setFichas(data);
+    } catch (error: any) {
+      setError(`Erro ao buscar fichas de emergência: ${error.message}`);
+      console.error("Erro ao buscar fichas de emergência:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+  
+  // Função para lidar com mudanças no formulário
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  // Função para lidar com mudanças na data
+  const handleDateChange = (date: Date) => {
+    setFormData(prev => ({ ...prev, validade: date }));
+  };
+  
+  // Função para lidar com upload de arquivo
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      if (file.type === 'application/pdf') {
+        setFormData(prev => ({ ...prev, arquivo: file }));
+        const fileURL = URL.createObjectURL(file);
+        setFilePreview(fileURL);
+      } else {
+        setError('Por favor, selecione apenas arquivos PDF.');
+        setFormData(prev => ({ ...prev, arquivo: null }));
+        setFilePreview(null);
+      }
+    }
+  };
+  
+  // Função para salvar (criar ou atualizar) uma ficha
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      // Validações básicas
+      if (!formData.nome || !formData.produto || !formData.setor) {
+        throw new Error('Nome, produto e setor são campos obrigatórios.');
+      }
+      
+      if (!isEditing && !formData.arquivo) {
+        throw new Error('Por favor, selecione um arquivo PDF da ficha de emergência.');
+      }
+      
+      // Realizar criação ou atualização
+      if (isEditing && editingId) {
+        // Convertendo null para undefined para compatibilidade de tipos
+        const fileToUpload = formData.arquivo === null ? undefined : formData.arquivo;
+        await fichaEmergenciaService.update(editingId, formData, fileToUpload);
+        setSuccess('Ficha de emergência atualizada com sucesso!');
+      } else {
+        if (!formData.arquivo) {
+          throw new Error('Por favor, selecione um arquivo PDF da ficha de emergência.');
+        }
+        // Como o arquivo é obrigatório para criação, temos certeza que não é null aqui
+        await fichaEmergenciaService.create(formData, formData.arquivo);
+        setSuccess('Ficha de emergência cadastrada com sucesso!');
+      }
+      
+      // Limpar formulário e recarregar lista
+      clearForm();
+      fetchFichas();
+      setActiveTab('consulta');
+    } catch (error: any) {
+      console.error('Erro ao salvar ficha de emergência:', error);
+      setError(`Erro ao ${isEditing ? 'atualizar' : 'cadastrar'} ficha: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Função para iniciar edição de uma ficha
+  const startEdit = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const ficha = await fichaEmergenciaService.getById(id);
+      if (ficha) {
+        setFormData({
+          nome: ficha.nome,
+          produto: ficha.produto,
+          numeroOnu: ficha.numeroOnu || '',
+          classeRisco: ficha.classeRisco || '',
+          setor: ficha.setor || '',
+          validade: ficha.validade instanceof Date ? ficha.validade : new Date(ficha.validade),
+          arquivoUrl: ficha.arquivoUrl,
+          arquivo: null
+        });
+        setEditingId(id);
+        setIsEditing(true);
+        setActiveTab('cadastro');
+      }
+    } catch (error: any) {
+      setError(`Erro ao carregar dados para edição: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Função para confirmar exclusão
+  const confirmDelete = (id: string, nome: string) => {
+    setSelectedItemId(id);
+    setSelectedItemName(nome);
+    setIsDeleteModalOpen(true);
+  };
+  
+  // Função para excluir ficha
+  const handleDelete = async () => {
+    if (!selectedItemId) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      await fichaEmergenciaService.delete(selectedItemId);
+      await fetchFichas();
+      setSuccess('Ficha de emergência excluída com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao excluir ficha:', error);
+      setError(`Falha ao excluir a ficha: ${error.message}`);
+    } finally {
+      setLoading(false);
+      setIsDeleteModalOpen(false);
+      setSelectedItemId(null);
+      setSelectedItemName('');
+    }
+  };
+  
+  // Função para abrir modal de visualização
+  const openViewModal = (url: string) => {
+    setSelectedFile(url);
+    setIsViewModalOpen(true);
+  };
+  
+  // Função para limpar formulário
+  const clearForm = () => {
+    setFormData({
+      nome: '',
+      produto: '',
+      numeroOnu: '',
+      classeRisco: '',
+      setor: '',
+      validade: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      arquivoUrl: '',
+      arquivo: null
+    });
+    setFilePreview(null);
+    setEditingId(null);
+    setIsEditing(false);
+  };
+  
+  // Função para alternar exibição de filtros
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
+  
+  // Função para lidar com mudanças nos filtros
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFiltros(prev => ({ ...prev, [name]: value }));
+  };
+  
+  // Função para limpar filtros
+  const clearFilters = () => {
+    setFiltros({});
+    setShowFilters(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      {/* Header com botão de voltar */}
+      <div className="bg-gray-800/80 backdrop-blur-lg border-b border-gray-700 sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link 
+            href="/fdu" 
+            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <HiChevronLeft className="text-xl" />
+            <span>Voltar ao Dashboard</span>
+          </Link>
+          
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setActiveTab(activeTab === "cadastro" ? "consulta" : "cadastro")}
+              className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-colors ${activeTab === "cadastro" ? "bg-blue-600/20 text-blue-300" : "bg-blue-600/10 text-gray-300 hover:bg-blue-600/20 hover:text-blue-300"}`}
+            >
+              {activeTab === "cadastro" ? (
+                <>
+                  <HiViewList className="text-lg" />
+                  <span>Ver Consulta</span>
+                </>
+              ) : (
+                <>
+                  <HiPlus className="text-lg" />
+                  <span>Novo Cadastro</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex flex-col space-y-6">
+
+          {/* Área de alerta para mensagens */}
+          {(error || success) && (
+            <motion.div 
+              initial="hidden"
+              animate="visible"
+              variants={fadeIn}
+              className={`p-4 rounded-lg ${error ? 'bg-red-900/30 border border-red-700' : 'bg-green-900/30 border border-green-700'}`}
+            >
+              <div className="flex items-center space-x-3">
+                {error ? (
+                  <div className="p-2 rounded-full bg-red-500/20">
+                    <HiX className="text-xl text-red-400" />
+                  </div>
+                ) : (
+                  <div className="p-2 rounded-full bg-green-500/20">
+                    <HiCheck className="text-xl text-green-400" />
+                  </div>
+                )}
+                <p className={error ? "text-red-300" : "text-green-300"}>
+                  {error || success}
+                </p>
+                <button 
+                  onClick={() => error ? setError(null) : setSuccess(null)}
+                  className={`ml-auto p-1 rounded-full ${error ? 'hover:bg-red-800/50' : 'hover:bg-green-800/50'}`}
+                >
+                  <HiX className="text-lg" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Título da Página */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+            className="flex items-center space-x-3 mb-6"
+          >
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <HiShieldExclamation className="text-2xl text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-white">
+                {activeTab === "cadastro" ? (isEditing ? "Editar" : "Nova") : "Gerenciar"} Ficha de Emergência
+              </h1>
+              <p className="text-gray-400 text-sm">
+                {activeTab === "cadastro"
+                  ? isEditing
+                    ? "Atualize os dados da ficha de emergência"
+                    : "Cadastre uma nova ficha de emergência no sistema"
+                  : "Consulte e gerencie as fichas de emergência cadastradas"}
+              </p>
+            </div>
+          </motion.div>
+        
+        {/* Conteúdo da aba ativa */}
+        <div className="pb-6">
+          {activeTab === 'cadastro' ? (
+            <FormularioFicha 
+              formData={formData}
+              isEditing={isEditing}
+              loading={loading}
+              filePreview={filePreview}
+              handleInputChange={handleInputChange}
+              handleDateChange={handleDateChange}
+              handleFileChange={handleFileChange}
+              handleSubmit={handleSubmit}
+              cancelEdit={() => {
+                clearForm();
+                setActiveTab('consulta');
+              }}
+              classesRisco={classesRisco}
+              setores={setores}
+            />
+          ) : (
+            <ConsultaFichas 
+              fichas={fichas}
+              loading={loading}
+              filtros={filtros}
+              showFilters={showFilters}
+              toggleFilters={toggleFilters}
+              handleFilterChange={handleFilterChange}
+              clearFilters={clearFilters}
+              startEdit={startEdit}
+              confirmDelete={confirmDelete}
+              openViewModal={openViewModal}
+              setores={setores}
+              classesRisco={classesRisco}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Modais */}
+      <DeleteModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Excluir Ficha de Emergência"
+        message={`Tem certeza que deseja excluir a ficha "${selectedItemName}"? Esta ação não pode ser desfeita.`}
+        loading={loading}
+      />
+      
+      <ViewPdfModal 
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        fileUrl={selectedFile}
+      />
+
+      {/* Rodapé */}
+      <footer className="bg-gray-100 text-gray-600 py-4 mt-auto">
+        <div className="container mx-auto px-4 text-center text-sm">
+          {new Date().getFullYear()} - Sistema de Gerenciamento de FDUs
+        </div>
+      </footer>
+    </div>
+  );
+}

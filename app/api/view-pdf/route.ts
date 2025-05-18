@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
       let bucket = 'certificados'; // Mudando para 'certificados' como bucket padrão
       
       // Tentar adivinhar o bucket correto com base no nome do arquivo
-      if (filePath.toLowerCase().includes('fispq') || filePath.toLowerCase().includes('quimico')) {
-        bucket = 'fisqps';
+      if (filePath.toLowerCase().includes('fdu') || filePath.toLowerCase().includes('quimico')) {
+        bucket = 'fdus';
       } else if (filePath.toLowerCase().includes('certificado') || filePath.toLowerCase().includes('metrologista')) {
         bucket = 'certificados';
       } else if (filePath.toLowerCase().includes('emergencia')) {
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
           
         // Caminhos com prefixos comuns  
         bucket === 'certificados' ? `certificados/${fileNameOnly}` : null,
-        bucket === 'fisqps' ? `fisqps/${fileNameOnly}` : null,
+        bucket === 'fdus' ? `fdus/${fileNameOnly}` : null,
         
         // Para certificados especificamente
         fileNameOnly?.replace(/^certificado_-_/, ''),

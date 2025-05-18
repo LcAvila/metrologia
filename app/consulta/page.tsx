@@ -8,11 +8,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { HiDocumentText, HiCollection } from 'react-icons/hi';
 import { HiExclamationTriangle } from 'react-icons/hi2'; // Corrigindo o import
-import PublicFISPQList from './components/PublicFISPQList';
+import PublicFDUList from './components/PublicFDUList';
 import PublicFichaEmergenciaList from './components/PublicFichaEmergenciaList';
 
 // Constantes para os filtros
-const TIPOS = ["Todos", "certificado", "fispq", "emergencia", "laudo"];
+const TIPOS = ["Todos", "certificado", "fdu", "emergencia", "laudo"];
 const SETORES = ["Todos", "Injetoras", "Ferramentaria", "Qualidade", "Montagem", "Almoxarifado", "Manutenção", "Outros"];
 
 // Interfaces
@@ -363,9 +363,8 @@ export default function ConsultaPage() {
         </div>
 
         {/* Lista de documentos */}
-        {activeTab === "fispqs" ? (
-          <PublicFISPQList />
-        ) : activeTab === "fichas_emergencia" ? (
+        {activeTab === "fdu" && <PublicFDUList />}
+        {activeTab === "fichas_emergencia" ? (
           <PublicFichaEmergenciaList />
         ) : loading ? (
           <div className="flex justify-center items-center py-20">

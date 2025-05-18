@@ -1,42 +1,42 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FISPQ } from '../types/fispq';
-import { fispqService } from '../services/fispqService';
-import FISPQCard from './FISPQCard';
+import { FichaEmergencia } from '../types/fichaEmergencia';
+import { fichaEmergenciaService } from '../services/fichaEmergenciaService';
+import FichaEmergenciaCard from './FichaEmergenciaCard';
 import { HiSearch, HiFilter, HiChevronDown, HiX } from 'react-icons/hi';
 
-interface FISPQListProps {
+interface FichaEmergenciaListProps {
   isAdmin?: boolean;
   showFilters?: boolean;
   limit?: number;
 }
 
-const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = true, limit }) => {
-  const [fispqs, setFispqs] = useState<FISPQ[]>([]);
+const FichaEmergenciaList: React.FC<FichaEmergenciaListProps> = ({ isAdmin = false, showFilters = true, limit }) => {
+  const [fichas, setFichas] = useState<FichaEmergencia[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
+    nome: '',
     produto: '',
-    fabricante: '',
-    setor: '',
-    tipoRisco: ''
+    numeroOnu: '',
+    classeRisco: ''
   });
 
   useEffect(() => {
-    loadFISPQs();
+    loadFichas();
   }, []);
 
-  const loadFISPQs = async () => {
+  const loadFichas = async () => {
     try {
       setLoading(true);
       let data;
       
       // Se o usuário for admin, usa o método normal, senão usa o método público
       if (isAdmin) {
-        data = await fispqService.list(filters);
+        data = await fichaEmergenciaService.list(filters);
       } else {
-        data = await fispqService.publicList(filters);
+        data = await fichaEmergenciaService.publicList(filters);
       }
       
       // Se houver um limite, aplica-o
@@ -44,27 +44,27 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
         data = data.slice(0, limit);
       }
       
-      setFispqs(data);
+      setFichas(data);
     } catch (error) {
-      console.error('Erro ao carregar FISPQs:', error);
+      console.error('Erro ao carregar Fichas de Emergência:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta FISPQ?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta Ficha de Emergência?')) {
       try {
-        await fispqService.delete(id);
-        loadFISPQs();
+        await fichaEmergenciaService.delete(id);
+        loadFichas();
       } catch (error) {
-        console.error('Erro ao excluir FISPQ:', error);
+        console.error('Erro ao excluir Ficha de Emergência:', error);
       }
     }
   };
 
   const handleEdit = (id: string) => {
-    window.location.href = `/fispq/editar/${id}`;
+    window.location.href = `/fdu/ficha-emergencia/editar/${id}`;
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -74,17 +74,17 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    loadFISPQs();
+    loadFichas();
   };
 
   const clearFilters = () => {
     setFilters({
+      nome: '',
       produto: '',
-      fabricante: '',
-      setor: '',
-      tipoRisco: ''
+      numeroOnu: '',
+      classeRisco: ''
     });
-    setTimeout(() => loadFISPQs(), 0);
+    setTimeout(() => loadFichas(), 0);
   };
 
   return (
@@ -93,7 +93,7 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
         <div className="bg-gray-900/70 border border-gray-800 rounded-xl p-5 overflow-hidden">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-white flex items-center gap-2">
-              <HiFilter className="text-blue-400" /> Filtros
+              <HiFilter className="text-purple-400" /> Filtros - Fichas de Emergência
             </h3>
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
@@ -113,6 +113,17 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
               <form onSubmit={handleSearch} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
+                    <label className="block text-sm text-gray-400 mb-1">Nome da Ficha</label>
+                    <input
+                      type="text"
+                      name="nome"
+                      value={filters.nome}
+                      onChange={handleFilterChange}
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
+                      placeholder="Nome da ficha"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm text-gray-400 mb-1">Produto</label>
                     <input
                       type="text"
@@ -124,36 +135,25 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Fabricante</label>
+                    <label className="block text-sm text-gray-400 mb-1">Número ONU</label>
                     <input
                       type="text"
-                      name="fabricante"
-                      value={filters.fabricante}
+                      name="numeroOnu"
+                      value={filters.numeroOnu}
                       onChange={handleFilterChange}
                       className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
-                      placeholder="Nome do fabricante"
+                      placeholder="Ex: 1203"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Setor</label>
+                    <label className="block text-sm text-gray-400 mb-1">Classe de Risco</label>
                     <input
                       type="text"
-                      name="setor"
-                      value={filters.setor}
+                      name="classeRisco"
+                      value={filters.classeRisco}
                       onChange={handleFilterChange}
                       className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
-                      placeholder="Setor de uso"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Tipo de Risco</label>
-                    <input
-                      type="text"
-                      name="tipoRisco"
-                      value={filters.tipoRisco}
-                      onChange={handleFilterChange}
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white"
-                      placeholder="Tipo de risco"
+                      placeholder="Ex: 3"
                     />
                   </div>
                 </div>
@@ -168,7 +168,7 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1"
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-1"
                   >
                     <HiSearch /> Pesquisar
                   </button>
@@ -181,19 +181,19 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
         </div>
-      ) : fispqs.length === 0 ? (
+      ) : fichas.length === 0 ? (
         <div className="bg-gray-900/70 border border-gray-800 rounded-xl p-8 text-center">
-          <h3 className="text-xl text-gray-400">Nenhuma FISPQ encontrada</h3>
-          <p className="text-gray-500 mt-2">Tente ajustar os filtros ou cadastre novas FISPQs.</p>
+          <h3 className="text-xl text-gray-400">Nenhuma Ficha de Emergência encontrada</h3>
+          <p className="text-gray-500 mt-2">Tente ajustar os filtros ou cadastre novas fichas.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {fispqs.map(fispq => (
-            <FISPQCard
-              key={fispq.id}
-              fispq={fispq}
+          {fichas.map(ficha => (
+            <FichaEmergenciaCard
+              key={ficha.id}
+              ficha={ficha}
               onEdit={isAdmin ? handleEdit : undefined}
               onDelete={isAdmin ? handleDelete : undefined}
               isAdmin={isAdmin}
@@ -205,4 +205,4 @@ const FISPQList: React.FC<FISPQListProps> = ({ isAdmin = false, showFilters = tr
   );
 };
 
-export default FISPQList;
+export default FichaEmergenciaList;

@@ -53,8 +53,8 @@ export interface Usuario {
   created_at?: string;
 }
 
-// Interface para FISPQs
-export interface FISPQ {
+// Interface para FDUs
+export interface FDU {
   id: string;
   produto: string;
   fabricante: string;
@@ -66,8 +66,8 @@ export interface FISPQ {
   criadoEm: string;
 }
 
-// Interface para filtros de FISPQ
-export interface FISPQFilter {
+// Interface para filtros de FDU
+export interface FDUFilter {
   produto?: string;
   fabricante?: string;
   numeroCas?: string;
@@ -89,7 +89,7 @@ export interface FichaEmergencia {
 }
 
 // Tipos de documentos suportados pelo sistema
-export type TipoDocumento = 'certificado' | 'fispq' | 'emergencia' | 'laudo';
+export type TipoDocumento = 'certificado' | 'fdu' | 'emergencia' | 'laudo';
 
 // Setores padrão da empresa
 export const SETORES = [

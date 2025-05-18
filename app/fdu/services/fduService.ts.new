@@ -1,9 +1,9 @@
-import { FISPQ, FISPQFilter } from '../types/fispq';
+import { FDU, FDUFilter } from '../types/fdu';
 import { supabase } from '../../lib/supabaseClient';
 import { storageService } from '../../services/storageService';
 
-export const fispqService = {
-  async create(fispq: Omit<FISPQ, 'id' | 'criadoEm'>, arquivo: File): Promise<FISPQ> {
+export const fduService = {
+  async create(fdu: Omit<FDU, 'id' | 'criadoEm'>, arquivo: File): Promise<FDU> {
     try {
       // Verificar se o usuário está autenticado
       const { data: { session } } = await supabase.auth.getSession();
@@ -12,10 +12,10 @@ export const fispqService = {
       }
       
       // Verificar se o bucket existe
-      const bucketName = 'fispqs';
+      const bucketName = 'fdus';
       const exists = await storageService.bucketExists(bucketName);
       if (!exists) {
-        throw new Error('O bucket fispqs não existe no Supabase. Por favor, crie manualmente no painel administrativo.');
+        throw new Error('O bucket fdus não existe no Supabase. Por favor, crie manualmente no painel administrativo.');
       }
       
       // Fazer upload do arquivo usando o serviço unificado
@@ -26,9 +26,9 @@ export const fispqService = {
         
       // Salvar os dados no banco de dados
       const { data, error } = await supabase
-        .from('fispqs')
+        .from('fdus')
         .insert({
-          ...fispq,
+          ...fdu,
           arquivoUrl,
           criadoEm: new Date().toISOString(),
           // Adicionar user_id para RLS
@@ -39,12 +39,12 @@ export const fispqService = {
 
       if (error) {
         console.error('Erro ao inserir no banco de dados:', error);
-        throw new Error('Erro ao salvar os dados. Verifique se você tem permissões na tabela fispqs.');
+        throw new Error('Erro ao salvar os dados. Verifique se você tem permissões na tabela fdus.');
       }
       
       return data;
     } catch (error) {
-      console.error('Erro ao criar FISPQ:', error);
+      console.error('Erro ao criar FDU:', error);
       throw error;
     }
   },
@@ -58,10 +58,10 @@ export const fispqService = {
       }
       
       // Verificar se o bucket existe
-      const bucketName = 'fispqs';
+      const bucketName = 'fdus';
       const exists = await storageService.bucketExists(bucketName);
       if (!exists) {
-        throw new Error('O bucket fispqs não existe no Supabase. Por favor, crie manualmente no painel administrativo.');
+        throw new Error('O bucket fdus não existe no Supabase. Por favor, crie manualmente no painel administrativo.');
       }
       
       // Fazer upload do novo arquivo usando o serviço unificado
@@ -73,8 +73,8 @@ export const fispqService = {
 
     // Atualizar registro
     const { data, error } = await supabase
-      .from('fispqs')
-      .update({ ...fispq, arquivoUrl })
+      .from('fdus')
+      .update({ ...fdu, arquivoUrl })
       .eq('id', id)
       .select()
       .single();
@@ -85,16 +85,16 @@ export const fispqService = {
 
   async delete(id: string): Promise<void> {
     const { error } = await supabase
-      .from('fispqs')
+      .from('fdus')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
   },
 
-  async getById(id: string): Promise<FISPQ | null> {
+  async getById(id: string): Promise<FDU | null> {
     const { data, error } = await supabase
-      .from('fispqs')
+      .from('fdus')
       .select()
       .eq('id', id)
       .single();
@@ -103,8 +103,8 @@ export const fispqService = {
     return data;
   },
 
-  async list(filter?: FISPQFilter) {
-    let query = supabase.from('fispqs').select();
+  async list(filter?: FDUFilter) {
+    let query = supabase.from('fdus').select();
 
     if (filter) {
       if (filter.produto) {
@@ -138,14 +138,14 @@ export const fispqService = {
   },
 
   async getStatistics() {
-    const { data: totalFispqs, error: countError } = await supabase
-      .from('fispqs')
+    const { data: totalFdus, error: countError } = await supabase
+      .from('fdus')
       .select('id', { count: 'exact' });
 
     if (countError) throw countError;
 
-    const { data: expiringFispqs, error: expiringError } = await supabase
-      .from('fispqs')
+    const { data: expiringFdus, error: expiringError } = await supabase
+      .from('fdus')
       .select()
       .gte('validade', new Date().toISOString())
       .lte('validade', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
@@ -153,14 +153,14 @@ export const fispqService = {
     if (expiringError) throw expiringError;
 
     const { data: setores, error: setoresError } = await supabase
-      .from('fispqs')
+      .from('fdus')
       .select('setor');
 
     if (setoresError) throw setoresError;
 
     return {
-      total: totalFispqs.length,
-      expirando: expiringFispqs.length,
+      total: totalFdus.length,
+      expirando: expiringFdus.length,
       setores: [...new Set(setores.map(s => s.setor))].length
     };
   }
